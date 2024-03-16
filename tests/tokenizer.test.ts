@@ -2,11 +2,15 @@ import { expect, test } from "vitest";
 import { tokenize } from "../src/tokenizer";
 
 test("tokenize symbol", () => {
-  const actual = tokenize("foo bar baz");
+  const actual = tokenize("foo bar baz snake_case camelCase PascalCase name2");
   const expected = [
-    { symbol: "foo" },
-    { symbol: "bar" },
-    { symbol: "baz" }
+    { kind: "symbol", value: "foo" },
+    { kind: "symbol", value: "bar" },
+    { kind: "symbol", value: "baz" },
+    { kind: "symbol", value: "snake_case" },
+    { kind: "symbol", value: "camelCase" },
+    { kind: "symbol", value: "PascalCase" },
+    { kind: "symbol", value: "name2" },
   ];
   expect(actual).toEqual(expected);
 });
@@ -14,10 +18,10 @@ test("tokenize symbol", () => {
 test("tokenize int", () => {
   const actual = tokenize("42 100 -10");
   const expected = [
-    { int: "42" },
-    { int: "100" },
-    { symbol: "-", },
-    { int: "10" }
+    { kind: "int", value: "42" },
+    { kind: "int", value: "100" },
+    { kind: "symbol", value: "-", },
+    { kind: "int", value: "10" }
   ];
   expect(actual).toEqual(expected);
 });
@@ -25,20 +29,21 @@ test("tokenize int", () => {
 test("tokenize float", () => {
   const actual = tokenize("42.5 .3 -.24");
   const expected = [
-    { float: "42.5" },
-    { float: ".3" },
-    { symbol: "-", },
-    { float: ".24" }
+    { kind: "float", value: "42.5" },
+    { kind: "float", value: ".3" },
+    { kind: "symbol", value: "-", },
+    { kind: "float", value: ".24" }
   ];
   expect(actual).toEqual(expected);
 });
 
 test("tokenize string", () => {
-  const actual = tokenize('"foo" "bar" "baz"');
+  const actual = tokenize('"foo" "bar" "baz" "Hello World"');
   const expected = [
-    { string: "foo" },
-    { string: "bar" },
-    { string: "baz" }
+    { kind: "string", value: "foo" },
+    { kind: "string", value: "bar" },
+    { kind: "string", value: "baz" },
+    { kind: "string", value: "Hello World" }
   ];
   expect(actual).toEqual(expected);
 });
@@ -46,14 +51,14 @@ test("tokenize string", () => {
 test("tokenize delimiter", () => {
   const actual = tokenize("()[]{},.");
   const expected = [
-    { delimiter: "(" },
-    { delimiter: ")" },
-    { delimiter: "[", },
-    { delimiter: "]" },
-    { delimiter: "{", },
-    { delimiter: "}" },
-    { delimiter: "," },
-    { delimiter: "." },
+    { kind: "delimiter", value: "(" },
+    { kind: "delimiter", value: ")" },
+    { kind: "delimiter", value: "[", },
+    { kind: "delimiter", value: "]" },
+    { kind: "delimiter", value: "{", },
+    { kind: "delimiter", value: "}" },
+    { kind: "delimiter", value: "," },
+    { kind: "delimiter", value: "." },
   ];
   expect(actual).toEqual(expected);
 });

@@ -1,28 +1,34 @@
-type SymbolToken = {
-  symbol: string;
+type Symbol = {
+  kind: "symbol";
+  value: string;
 }
 
-type IntToken = {
-  int: string;
+type Int = {
+  kind: "int";
+  value: string;
 }
 
-type FloatToken = {
-  float: string;
+type Float = {
+  kind: "float";
+  value: string;
 }
 
-type StringToken = {
-  string: string;
+type String = {
+  kind: "string";
+  value: string;
 }
 
-type DelimiterToken = {
-  delimiter: string;
+type Delimiter = {
+  kind: "delimiter";
+  value: string;
 }
 
-type Token = SymbolToken
-  | IntToken
-  | FloatToken
-  | StringToken
-  | DelimiterToken;
+export type Token
+  = Symbol
+  | Int
+  | Float
+  | String
+  | Delimiter;
 
 function isAlphabetic(char: string): boolean {
   const code = char.charCodeAt(0);
@@ -58,12 +64,12 @@ function takeWhileStatefull<State>(
   return [input.slice(0, i), input.slice(i), state];
 }
 
-function tokenizeSymbol(input: string): [SymbolToken, string] {
-  const [symbol, rest] = takeWhile(input, isAlphabetic);
-  return [{ symbol }, rest];
+function tokenizeSymbol(input: string): [Symbol, string] {
+  const [value, rest] = takeWhile(input, c => isAlphabetic(c) || isNumeric(c) || c === '_');
+  return [{ kind: "symbol", value }, rest];
 }
 
-function tokenizeNumber(input: string): [IntToken | FloatToken | DelimiterToken, string] {
+function tokenizeNumber(input: string): [Int | Float | Delimiter, string] {
   const [number, rest, isFloat] = takeWhileStatefull(input, false, (c, isFloat) => {
     if (c === '.' && !isFloat) {
       return [true, true];
@@ -71,30 +77,30 @@ function tokenizeNumber(input: string): [IntToken | FloatToken | DelimiterToken,
     return [isNumeric(c), isFloat]
   });
   if (isFloat) {
-    const token = number === '.' ? { delimiter: '.' } : { float: number };
-    return [token, rest];
+    if (number === '.') return [{ kind: "delimiter", value: '.' }, rest];
+    return [{ kind: "float", value: number }, rest];
   }
-  return [{ int: number }, rest];
+  return [{ kind: "int", value: number }, rest];
 }
 
-function tokenizeString(input: string): [StringToken, string] {
-  const [string, rest] = takeWhile(input, c => c !== '"');
-  return [{ string }, rest.slice(1)];
+function tokenizeString(input: string): [String, string] {
+  const [value, rest] = takeWhile(input, c => c !== '"');
+  return [{ kind: "string", value }, rest.slice(1)];
 }
 
 function nextToken(input: string): [Token, string] {
   const c = input[0];
-  if (isAlphabetic(c)) return tokenizeSymbol(input);
+  if (isAlphabetic(c) || c === '_') return tokenizeSymbol(input);
   if (isNumeric(c) || c === '.') return tokenizeNumber(input);
   if (c === '"') return tokenizeString(input.slice(1))
-  if (c === '-') return [{ symbol: '-', }, input.slice(1)];
-  if (c === '(') return [{ delimiter: '(', }, input.slice(1)];
-  if (c === ')') return [{ delimiter: ')', }, input.slice(1)];
-  if (c === '[') return [{ delimiter: '[', }, input.slice(1)];
-  if (c === ']') return [{ delimiter: ']', }, input.slice(1)];
-  if (c === '{') return [{ delimiter: '{', }, input.slice(1)];
-  if (c === '}') return [{ delimiter: '}', }, input.slice(1)];
-  if (c === ',') return [{ delimiter: ',', }, input.slice(1)];
+  if (c === '-') return [{ kind: "symbol", value: '-', }, input.slice(1)];
+  if (c === '(') return [{ kind: "delimiter", value: '(', }, input.slice(1)];
+  if (c === ')') return [{ kind: "delimiter", value: ')', }, input.slice(1)];
+  if (c === '[') return [{ kind: "delimiter", value: '[', }, input.slice(1)];
+  if (c === ']') return [{ kind: "delimiter", value: ']', }, input.slice(1)];
+  if (c === '{') return [{ kind: "delimiter", value: '{', }, input.slice(1)];
+  if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
+  if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
   throw new Error(`Unexpected character: ${c}`);
 }
 
