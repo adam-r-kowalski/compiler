@@ -33,6 +33,16 @@ test("tokenize float", () => {
   expect(actual).toEqual(expected);
 });
 
+test("tokenize string", () => {
+  const actual = tokenize('"foo" "bar" "baz"');
+  const expected = [
+    { string: "foo" },
+    { string: "bar" },
+    { string: "baz" }
+  ];
+  expect(actual).toEqual(expected);
+});
+
 test("tokenize delimiter", () => {
   const actual = tokenize("()[]{}");
   const expected = [

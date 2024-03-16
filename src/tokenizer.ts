@@ -2,7 +2,7 @@ type SymbolToken = {
   symbol: string;
 }
 
-type IntegerToken = {
+type IntToken = {
   int: string;
 }
 
@@ -19,31 +19,38 @@ type DelimiterToken = {
 }
 
 type Token = SymbolToken
-  | IntegerToken
+  | IntToken
   | FloatToken
   | StringToken
   | DelimiterToken;
 
 function isAlphabetic(char: string): boolean {
-  return /^[A-Za-z]$/.test(char);
+  const code = char.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
 function isNumeric(char: string): boolean {
-  return /^[0-9]$/.test(char);
+  const code = char.charCodeAt(0);
+  return code >= 48 && code <= 57;
 }
+
 
 function takeWhile(input: string, predicate: (char: string) => boolean): [string, string] {
   let i = 0;
-  while (predicate(input[i])) {
+  while (i < input.length && predicate(input[i])) {
     i++;
   }
   return [input.slice(0, i), input.slice(i)];
 }
 
-function takeWhileStatefull<State>(input: string, initial: State, predicate: (char: string, state: State) => [boolean, State]): [string, string, State] {
+function takeWhileStatefull<State>(
+  input: string,
+  initial: State,
+  predicate: (char: string, state: State) => [boolean, State]
+): [string, string, State] {
   let i = 0;
   let state = initial;
-  while (true) {
+  while (i < input.length) {
     const [condition, new_state] = predicate(input[i], state);
     if (!condition) break;
     state = new_state;
@@ -58,7 +65,7 @@ function tokenizeSymbol(input: string): [SymbolToken, string] {
   return [{ symbol }, rest];
 }
 
-function tokenizeNumber(input: string): [IntegerToken | FloatToken, string] {
+function tokenizeNumber(input: string): [IntToken | FloatToken, string] {
   const [number, rest, isFloat] = takeWhileStatefull(input, false, (c, isFloat) => {
     if (c === '.' && !isFloat) {
       return [true, true];
@@ -68,10 +75,16 @@ function tokenizeNumber(input: string): [IntegerToken | FloatToken, string] {
   return isFloat ? [{ float: number }, rest] : [{ int: number }, rest];
 }
 
+function tokenizeString(input: string): [StringToken, string] {
+  const [string, rest] = takeWhile(input, c => c !== '"');
+  return [{ string }, rest.slice(1)];
+}
+
 function nextToken(input: string): [Token, string] {
   const c = input[0];
   if (isAlphabetic(c)) return tokenizeSymbol(input);
   if (isNumeric(c) || c === '.') return tokenizeNumber(input);
+  if (c === '"') return tokenizeString(input.slice(1))
   if (c === '-') return [{ symbol: '-', }, input.slice(1)];
   if (c === '(') return [{ delimiter: '(', }, input.slice(1)];
   if (c === ')') return [{ delimiter: ')', }, input.slice(1)];
