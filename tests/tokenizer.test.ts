@@ -44,14 +44,16 @@ test("tokenize string", () => {
 });
 
 test("tokenize delimiter", () => {
-  const actual = tokenize("()[]{}");
+  const actual = tokenize("()[]{},.");
   const expected = [
     { delimiter: "(" },
     { delimiter: ")" },
     { delimiter: "[", },
     { delimiter: "]" },
     { delimiter: "{", },
-    { delimiter: "}" }
+    { delimiter: "}" },
+    { delimiter: "," },
+    { delimiter: "." },
   ];
   expect(actual).toEqual(expected);
 });

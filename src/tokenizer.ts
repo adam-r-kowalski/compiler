@@ -34,7 +34,6 @@ function isNumeric(char: string): boolean {
   return code >= 48 && code <= 57;
 }
 
-
 function takeWhile(input: string, predicate: (char: string) => boolean): [string, string] {
   let i = 0;
   while (i < input.length && predicate(input[i])) {
@@ -59,20 +58,23 @@ function takeWhileStatefull<State>(
   return [input.slice(0, i), input.slice(i), state];
 }
 
-
 function tokenizeSymbol(input: string): [SymbolToken, string] {
   const [symbol, rest] = takeWhile(input, isAlphabetic);
   return [{ symbol }, rest];
 }
 
-function tokenizeNumber(input: string): [IntToken | FloatToken, string] {
+function tokenizeNumber(input: string): [IntToken | FloatToken | DelimiterToken, string] {
   const [number, rest, isFloat] = takeWhileStatefull(input, false, (c, isFloat) => {
     if (c === '.' && !isFloat) {
       return [true, true];
     }
     return [isNumeric(c), isFloat]
   });
-  return isFloat ? [{ float: number }, rest] : [{ int: number }, rest];
+  if (isFloat) {
+    const token = number === '.' ? { delimiter: '.' } : { float: number };
+    return [token, rest];
+  }
+  return [{ int: number }, rest];
 }
 
 function tokenizeString(input: string): [StringToken, string] {
@@ -92,6 +94,7 @@ function nextToken(input: string): [Token, string] {
   if (c === ']') return [{ delimiter: ']', }, input.slice(1)];
   if (c === '{') return [{ delimiter: '{', }, input.slice(1)];
   if (c === '}') return [{ delimiter: '}', }, input.slice(1)];
+  if (c === ',') return [{ delimiter: ',', }, input.slice(1)];
   throw new Error(`Unexpected character: ${c}`);
 }
 
