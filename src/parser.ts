@@ -107,12 +107,26 @@ function parseFunctionParameters(tokens: Token[], _: Expression): [Parameter[], 
     throw new Error('Unexpected end of input');
 }
 
+function trimNewlines(tokens: Token[]): Token[] {
+    while (tokens.length !== 0) {
+        const token = tokens[0];
+        if (token.kind === "newline") {
+            tokens = tokens.slice(1);
+        } else {
+            return tokens;
+        }
+    }
+    return tokens;
+}
+
 function parseFunction(tokens: Token[], _: Expression): [Expression, Token[]] {
     tokens = tokens.slice(1);
     const [parameters, rest] = parseFunctionParameters(tokens, _);
     tokens = consume(rest, { kind: "delimiter", value: "{" });
+    tokens = trimNewlines(tokens);
     const [body, tokens2] = parseExpression(tokens);
-    tokens = consume(tokens2, { kind: "delimiter", value: "}" });
+    tokens = trimNewlines(tokens2);
+    tokens = consume(tokens, { kind: "delimiter", value: "}" });
     return [{ kind: "function", value: { parameters, body } }, tokens]
 }
 

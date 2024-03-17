@@ -63,3 +63,14 @@ test("tokenize delimiter", () => {
   ];
   expect(actual).toEqual(expected);
 });
+
+test("tokenize newline", () => {
+  const actual = tokenize(`
+  
+  `);
+  const expected = [
+    { kind: "newline" },
+    { kind: "newline" },
+  ];
+  expect(actual).toEqual(expected);
+});

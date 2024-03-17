@@ -157,3 +157,38 @@ test("parse function definition with two parameters", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse function definition across multiple lines", () => {
+    const tokens = tokenize(`
+        fn(x: i64, y: bool) {
+            f(x, y)
+        }
+    `.trim());
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "function",
+        value: {
+            parameters: [
+                {
+                    name: "x",
+                    type: { kind: "symbol", value: "i64" }
+                },
+                {
+                    name: "y",
+                    type: { kind: "symbol", value: "bool" }
+                }
+            ],
+            body: {
+                kind: "call",
+                value: {
+                    function: { kind: "symbol", value: "f" },
+                    arguments: [
+                        { kind: "symbol", value: "x" },
+                        { kind: "symbol", value: "y" }
+                    ]
+                }
+            }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});

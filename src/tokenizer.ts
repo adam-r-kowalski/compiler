@@ -23,12 +23,17 @@ export type Delimiter = {
   value: string;
 }
 
+export type Newline = {
+  kind: "newline";
+}
+
 export type Token
   = Symbol
   | Int
   | Float
   | String
-  | Delimiter;
+  | Delimiter
+  | Newline;
 
 function isAlphabetic(char: string): boolean {
   const code = char.charCodeAt(0);
@@ -102,16 +107,17 @@ function nextToken(input: string): [Token, string] {
   if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
   if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
   if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
+  if (c === '\n') return [{ kind: "newline" }, input.slice(1)];
   throw new Error(`Unexpected character: ${c}`);
 }
 
 export function tokenize(input: string): Token[] {
   let tokens = [];
   while (true) {
-    input = input.trimStart();
-    if (input.length === 0) return tokens;
-    const [token, rest] = nextToken(input);
-    input = rest;
+    const [_, input2] = takeWhile(input, c => c === ' ');
+    if (input2.length === 0) return tokens;
+    const [token, input3] = nextToken(input2);
+    input = input3;
     tokens.push(token);
   }
 }
