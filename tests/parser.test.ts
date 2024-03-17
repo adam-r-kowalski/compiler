@@ -96,7 +96,20 @@ test("parse nested function call", () => {
     expect(actual).toEqual(expected);
 });
 
-test("parse function definition", () => {
+test("parse function definition with no parameters", () => {
+    const tokens = tokenize('fn() { 42 }');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "function",
+        value: {
+            parameters: [],
+            body: { kind: "int", value: "42" }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function definition with one parameter", () => {
     const tokens = tokenize('fn(x: i64) { x }');
     const actual = parseExpression(tokens);
     const expected = [{
@@ -109,6 +122,37 @@ test("parse function definition", () => {
                 }
             ],
             body: { kind: "symbol", value: "x" }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function definition with two parameters", () => {
+    const tokens = tokenize('fn(x: i64, y: bool) { f(x, y) }');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "function",
+        value: {
+            parameters: [
+                {
+                    name: "x",
+                    type: { kind: "symbol", value: "i64" }
+                },
+                {
+                    name: "y",
+                    type: { kind: "symbol", value: "bool" }
+                }
+            ],
+            body: {
+                kind: "call",
+                value: {
+                    function: { kind: "symbol", value: "f" },
+                    arguments: [
+                        { kind: "symbol", value: "x" },
+                        { kind: "symbol", value: "y" }
+                    ]
+                }
+            }
         }
     }, []];
     expect(actual).toEqual(expected);

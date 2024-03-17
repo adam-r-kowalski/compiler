@@ -94,10 +94,13 @@ function parseFunctionParameters(tokens: Token[], _: Expression): [Parameter[], 
                 tokens = rest;
                 parameters.push({ name: token.value, type });
                 break;
-            case "delimiter": switch (token.value) {
-                case ")": return [parameters, tokens.slice(1)];
-                default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
-            }
+            case "delimiter":
+                switch (token.value) {
+                    case ")": return [parameters, tokens.slice(1)];
+                    case ",": tokens = tokens.slice(1); break;
+                    default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+                }
+                break
             default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
         }
     }
