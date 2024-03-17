@@ -101,6 +101,7 @@ function nextToken(input: string): [Token, string] {
   if (c === '{') return [{ kind: "delimiter", value: '{', }, input.slice(1)];
   if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
   if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
+  if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
   throw new Error(`Unexpected character: ${c}`);
 }
 

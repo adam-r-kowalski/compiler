@@ -74,3 +74,42 @@ test("parse function call with multiple arguments", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse nested function call", () => {
+    const tokens = tokenize('f(g(x))');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "call",
+        value: {
+            function: { kind: "symbol", value: "f" },
+            arguments: [
+                {
+                    kind: "call",
+                    value: {
+                        function: { kind: "symbol", value: "g" },
+                        arguments: [{ kind: "symbol", value: "x" }]
+                    }
+                },
+            ]
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function definition", () => {
+    const tokens = tokenize('fn(x: i64) { x }');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "function",
+        value: {
+            parameters: [
+                {
+                    name: "x",
+                    type: { kind: "symbol", value: "i64" }
+                }
+            ],
+            body: { kind: "symbol", value: "x" }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
