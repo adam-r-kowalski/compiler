@@ -1,24 +1,24 @@
-type Symbol = {
+export type Symbol = {
   kind: "symbol";
   value: string;
 }
 
-type Int = {
+export type Int = {
   kind: "int";
   value: string;
 }
 
-type Float = {
+export type Float = {
   kind: "float";
   value: string;
 }
 
-type String = {
+export type String = {
   kind: "string";
   value: string;
 }
 
-type Delimiter = {
+export type Delimiter = {
   kind: "delimiter";
   value: string;
 }

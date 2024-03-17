@@ -15,3 +15,30 @@ test("parse int", () => {
     const expected = [{ kind: "int", value: "42" }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse float", () => {
+    const tokens = tokenize("3.14");
+    const actual = parseExpression(tokens);
+    const expected = [{ kind: "float", value: "3.14" }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse string", () => {
+    const tokens = tokenize('"Hello World"');
+    const actual = parseExpression(tokens);
+    const expected = [{ kind: "string", value: "Hello World" }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function call with no arguments", () => {
+    const tokens = tokenize('f()');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "call",
+        value: {
+            function: { kind: "symbol", value: "f" },
+            arguments: []
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
