@@ -30,18 +30,24 @@ type InfixParser = (tokens: Token[], prefix: Expression) => [Expression, Token[]
 
 function parseFunctionCall(tokens: Token[], prefix: Expression): [Expression, Token[]] {
     tokens = tokens.slice(1);
-    if (tokens.length === 0) throw new Error('Unexpected end of input');
-    const token = tokens[0];
-    switch (token.kind) {
-        case "delimiter": switch (token.value) {
-            case ")": return [{
-                kind: "call",
-                value: { function: prefix, arguments: [] }
-            }, tokens.slice(1)];
-            default: throw new Error(`Unexpected delimiter: ${JSON.stringify(token)}`);
+    const args: Expression[] = []
+    while (tokens.length !== 0) {
+        const token = tokens[0]
+        if (token.kind === 'delimiter') {
+            switch (token.value) {
+                case ')': return [{
+                    kind: "call",
+                    value: { function: prefix, arguments: args }
+                }, tokens.slice(1)]
+                case ',': tokens = tokens.slice(1); break;
+                default: break;
+            }
         }
-        default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+        const [argument, rest] = parseExpression(tokens);
+        args.push(argument);
+        tokens = rest;
     }
+    throw new Error('Unexpected end of input');
 }
 
 function infixParserForDelimiter(delimiter: Delimiter): InfixParser | null {

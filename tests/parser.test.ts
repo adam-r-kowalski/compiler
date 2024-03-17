@@ -42,3 +42,35 @@ test("parse function call with no arguments", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse function call with one argument", () => {
+    const tokens = tokenize('f(x)');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "call",
+        value: {
+            function: { kind: "symbol", value: "f" },
+            arguments: [
+                { kind: "symbol", value: "x" }
+            ]
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function call with multiple arguments", () => {
+    const tokens = tokenize('f(x, y, z)');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "call",
+        value: {
+            function: { kind: "symbol", value: "f" },
+            arguments: [
+                { kind: "symbol", value: "x" },
+                { kind: "symbol", value: "y" },
+                { kind: "symbol", value: "z" },
+            ]
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
