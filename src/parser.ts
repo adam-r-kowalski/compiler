@@ -1,4 +1,4 @@
-import type { Token, Delimiter, Symbol, Int, Float, String } from './tokenizer'
+import type { Token, Delimiter, Symbol, Int, Float, String, Operator } from './tokenizer'
 
 export type Call = {
     kind: "call";
@@ -21,7 +21,16 @@ export type Function = {
     }
 }
 
-export type Expression = Symbol | Int | Float | String | Call | Function;
+export type BinaryOp = {
+    kind: "binaryOp";
+    value: {
+        op: "=" | "+" | "-" | "*" | "/",
+        left: Expression;
+        right: Expression;
+    }
+}
+
+export type Expression = Symbol | Int | Float | String | Call | Function | BinaryOp;
 
 export type Ast = { [name: string]: Expression };
 
@@ -130,11 +139,20 @@ function parseFunction(tokens: Token[], _: Expression): [Expression, Token[]] {
     return [{ kind: "function", value: { parameters, body } }, tokens]
 }
 
+function infixParserForBinaryOp(operator: Operator): InfixParser | null {
+    return function (tokens: Token[], prefix: Expression): [Expression, Token[]] {
+        tokens = tokens.slice(1);
+        const [right, rest] = parseExpression(tokens);
+        return [{ kind: "binaryOp", value: { op: operator.value, left: prefix, right } }, rest];
+    }
+}
+
 function infixParserFor(tokens: Token[], prefix: Expression): InfixParser | null {
     if (tokens.length === 0) return null;
     const token = tokens[0];
     switch (token.kind) {
         case "delimiter": return infixParserForDelimiter(token, prefix);
+        case "operator": return infixParserForBinaryOp(token);
         default: return null;
     }
 }

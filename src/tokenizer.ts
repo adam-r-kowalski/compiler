@@ -20,7 +20,12 @@ export type String = {
 
 export type Delimiter = {
   kind: "delimiter";
-  value: string;
+  value: "(" | ")" | "[" | "]" | "{" | "}" | "," | "." | ":";
+}
+
+export type Operator = {
+  kind: "operator";
+  value: "=" | "+" | "-" | "*" | "/";
 }
 
 export type Newline = {
@@ -33,6 +38,7 @@ export type Token
   | Float
   | String
   | Delimiter
+  | Operator
   | Newline;
 
 function isAlphabetic(char: string): boolean {
@@ -98,7 +104,6 @@ function nextToken(input: string): [Token, string] {
   if (isAlphabetic(c) || c === '_') return tokenizeSymbol(input);
   if (isNumeric(c) || c === '.') return tokenizeNumber(input);
   if (c === '"') return tokenizeString(input.slice(1))
-  if (c === '-') return [{ kind: "symbol", value: '-', }, input.slice(1)];
   if (c === '(') return [{ kind: "delimiter", value: '(', }, input.slice(1)];
   if (c === ')') return [{ kind: "delimiter", value: ')', }, input.slice(1)];
   if (c === '[') return [{ kind: "delimiter", value: '[', }, input.slice(1)];
@@ -107,6 +112,11 @@ function nextToken(input: string): [Token, string] {
   if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
   if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
   if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
+  if (c === '=') return [{ kind: "operator", value: '=', }, input.slice(1)];
+  if (c === '+') return [{ kind: "operator", value: '+', }, input.slice(1)];
+  if (c === '-') return [{ kind: "operator", value: '-', }, input.slice(1)];
+  if (c === '/') return [{ kind: "operator", value: '/', }, input.slice(1)];
+  if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];
   if (c === '\n') return [{ kind: "newline" }, input.slice(1)];
   throw new Error(`Unexpected character: ${c}`);
 }

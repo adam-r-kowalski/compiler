@@ -20,7 +20,7 @@ test("tokenize int", () => {
   const expected = [
     { kind: "int", value: "42" },
     { kind: "int", value: "100" },
-    { kind: "symbol", value: "-", },
+    { kind: "operator", value: "-", },
     { kind: "int", value: "10" }
   ];
   expect(actual).toEqual(expected);
@@ -31,7 +31,7 @@ test("tokenize float", () => {
   const expected = [
     { kind: "float", value: "42.5" },
     { kind: "float", value: ".3" },
-    { kind: "symbol", value: "-", },
+    { kind: "operator", value: "-", },
     { kind: "float", value: ".24" }
   ];
   expect(actual).toEqual(expected);
@@ -60,6 +60,18 @@ test("tokenize delimiter", () => {
     { kind: "delimiter", value: "," },
     { kind: "delimiter", value: "." },
     { kind: "delimiter", value: ":" },
+  ];
+  expect(actual).toEqual(expected);
+});
+
+test("tokenize operator", () => {
+  const actual = tokenize("=+-/*");
+  const expected = [
+    { kind: "operator", value: "=" },
+    { kind: "operator", value: "+" },
+    { kind: "operator", value: "-" },
+    { kind: "operator", value: "/" },
+    { kind: "operator", value: "*" },
   ];
   expect(actual).toEqual(expected);
 });

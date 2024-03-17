@@ -192,3 +192,17 @@ test("parse function definition across multiple lines", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse variable definition", () => {
+    const tokens = tokenize('x = 42');
+    const actual = parseExpression(tokens);
+    const expected = [{
+        kind: "binaryOp",
+        value: {
+            op: "=",
+            left: { kind: "symbol", value: "x" },
+            right: { kind: "int", value: "42" }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
