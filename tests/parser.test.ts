@@ -220,3 +220,141 @@ test("parse variable define with type annotation", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse binary op +", () => {
+    const tokens = tokenize('x + y'.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: 'binaryOp',
+        value: {
+            op: '+',
+            left: { kind: 'symbol', value: 'x' },
+            right: { kind: 'symbol', value: 'y' }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse binary op *", () => {
+    const tokens = tokenize('x * y'.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: 'binaryOp',
+        value: {
+            op: '*',
+            left: { kind: 'symbol', value: 'x' },
+            right: { kind: 'symbol', value: 'y' }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse binary op + then *", () => {
+    const tokens = tokenize('x + y * z'.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: 'binaryOp',
+        value: {
+            op: '+',
+            left: { kind: 'symbol', value: 'x' },
+            right: {
+                kind: 'binaryOp',
+                value: {
+                    op: '*',
+                    left: { kind: 'symbol', value: 'y' },
+                    right: { kind: 'symbol', value: 'z' }
+                }
+            }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse binary op * then +", () => {
+    const tokens = tokenize('x * y + z'.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: 'binaryOp',
+        value: {
+            op: '+',
+            left: {
+                kind: 'binaryOp',
+                value: {
+                    op: '*',
+                    left: { kind: 'symbol', value: 'x' },
+                    right: { kind: 'symbol', value: 'y' }
+                }
+            },
+            right: { kind: 'symbol', value: 'z' },
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});
+
+test("parse function definition with block for body", () => {
+    const tokens = tokenize(`
+        fn(x: i64, y: i64) {
+            x2 = x * x
+            y2 = y * y
+            x2 + y2
+        }
+    `.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: "function",
+        value: {
+            parameters: [
+                {
+                    name: "x",
+                    type: { kind: "symbol", value: "i64" }
+                },
+                {
+                    name: "y",
+                    type: { kind: "symbol", value: "i64" }
+                }
+            ],
+            body: {
+                kind: "block",
+                value: [
+                    {
+                        kind: "define",
+                        value: {
+                            name: "x2",
+                            value: {
+                                kind: "binaryOp",
+                                value: {
+                                    op: "*",
+                                    left: { kind: "symbol", value: "x" },
+                                    right: { kind: "symbol", value: "x" }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        kind: "define",
+                        value: {
+                            name: "y2",
+                            value: {
+                                kind: "binaryOp",
+                                value: {
+                                    op: "*",
+                                    left: { kind: "symbol", value: "y" },
+                                    right: { kind: "symbol", value: "y" }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        kind: "binaryOp",
+                        value: {
+                            op: "+",
+                            left: { kind: "symbol", value: "x2" },
+                            right: { kind: "symbol", value: "y2" }
+                        }
+                    }
+                ]
+            }
+        }
+    }, []];
+    expect(actual).toEqual(expected);
+});

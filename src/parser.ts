@@ -43,6 +43,11 @@ export type Define = {
     }
 }
 
+export type Block = {
+    kind: "block";
+    value: Expression[];
+}
+
 export type Expression
     = Symbol
     | Int
@@ -51,7 +56,8 @@ export type Expression
     | Call
     | Function
     | BinaryOp
-    | Define;
+    | Define
+    | Block
 
 export type Ast = { [name: string]: Expression };
 
@@ -169,11 +175,41 @@ function parseFunction(tokens: Token[], _: Expression, precedence: Precedence): 
     tokens = tokens.slice(1);
     const [parameters, rest] = parseFunctionParameters(tokens, _, precedence);
     tokens = consume(rest, { kind: "delimiter", value: "{" });
-    tokens = trimNewlines(tokens);
-    const [body, tokens2] = parseExpression(tokens, precedence);
-    tokens = trimNewlines(tokens2);
-    tokens = consume(tokens, { kind: "delimiter", value: "}" });
-    return [{ kind: "function", value: { parameters, body } }, tokens]
+    const expressions: Expression[] = []
+    while (tokens.length !== 0) {
+        tokens = trimNewlines(tokens);
+        const token = tokens[0];
+        switch (token.kind) {
+            case "delimiter":
+                switch (token.value) {
+                    case "}":
+                        tokens = tokens.slice(1);
+                        switch (expressions.length) {
+                            case 0: throw new Error('Expected expression');
+                            case 1: return [{
+                                kind: "function",
+                                value: { parameters, body: expressions[0] }
+                            }, tokens]
+                            default: return [{
+                                kind: "function",
+                                value: { parameters, body: { kind: "block", value: expressions } }
+                            }, tokens]
+                        }
+                        break
+                    default:
+                        const [expression, newTokens] = parseExpression(tokens, precedenceOf.lowestPrecedence);
+                        expressions.push(expression)
+                        tokens = newTokens
+                        break
+                }
+                break
+            default:
+                const [expression, newTokens] = parseExpression(tokens, precedenceOf.lowestPrecedence);
+                expressions.push(expression)
+                tokens = newTokens
+                break
+        }
+    }
 }
 
 function parseBinaryOp(op: BinaryOpKind): [InfixParser, Precedence] {
@@ -199,9 +235,7 @@ function infixParserForOperator(operator: Operator): [InfixParser, Precedence] |
     }
 }
 
-function infixParserFor(tokens: Token[], prefix: Expression): [InfixParser, Precedence] | null {
-    if (tokens.length === 0) return null;
-    const token = tokens[0];
+function infixParserFor(token: Token, prefix: Expression): [InfixParser, Precedence] | null {
     switch (token.kind) {
         case "delimiter": return infixParserForDelimiter(token, prefix);
         case "operator": return infixParserForOperator(token);
@@ -210,12 +244,18 @@ function infixParserFor(tokens: Token[], prefix: Expression): [InfixParser, Prec
 }
 
 export function parseExpression(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
-    const [prefix, tokens2] = parsePrefix(tokens);
-    const parseInfixAndPrecedence = infixParserFor(tokens2, prefix);
-    if (parseInfixAndPrecedence === null) return [prefix, tokens2];
-    const [parseInfix, nextPrecedence] = parseInfixAndPrecedence;
-    if (precedence >= nextPrecedence) return [prefix, tokens2];
-    return parseInfix(tokens2, prefix, precedence)
+    let [prefix, rest] = parsePrefix(tokens);
+    tokens = rest
+    while (tokens.length !== 0) {
+        const parseInfixAndPrecedence = infixParserFor(tokens[0], prefix);
+        if (parseInfixAndPrecedence === null) return [prefix, tokens];
+        const [parseInfix, nextPrecedence] = parseInfixAndPrecedence;
+        if (precedence > nextPrecedence) return [prefix, tokens];
+        const [newPrefix, newTokens] = parseInfix(tokens, prefix, nextPrecedence)
+        prefix = newPrefix
+        tokens = newTokens
+    }
+    return [prefix, tokens]
 }
 
 export function parse(input: Token[]): Ast {
