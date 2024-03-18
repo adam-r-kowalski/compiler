@@ -20,7 +20,7 @@ export type String = {
 
 export type Delimiter = {
   kind: "delimiter";
-  value: "(" | ")" | "[" | "]" | "{" | "}" | "," | "." | ":";
+  value: "(" | ")" | "[" | "]" | "{" | "}" | "," | "." | ":" | "->";
 }
 
 export type Operator = {
@@ -99,11 +99,18 @@ function tokenizeString(input: string): [String, string] {
   return [{ kind: "string", value }, rest.slice(1)];
 }
 
+function tokenizeSubtractOrArrow(input: string): [Delimiter | Operator, string] {
+  if (input.length === 0) return [{ kind: "operator", value: '-' }, input];
+  if (input[0] === '>') return [{ kind: "delimiter", value: '->' }, input.slice(1)];
+  return [{ kind: "operator", value: '-' }, input];
+}
+
 function nextToken(input: string): [Token, string] {
   const c = input[0];
   if (isAlphabetic(c) || c === '_') return tokenizeSymbol(input);
   if (isNumeric(c) || c === '.') return tokenizeNumber(input);
   if (c === '"') return tokenizeString(input.slice(1))
+  if (c === '-') return tokenizeSubtractOrArrow(input.slice(1));
   if (c === '(') return [{ kind: "delimiter", value: '(', }, input.slice(1)];
   if (c === ')') return [{ kind: "delimiter", value: ')', }, input.slice(1)];
   if (c === '[') return [{ kind: "delimiter", value: '[', }, input.slice(1)];
@@ -114,7 +121,6 @@ function nextToken(input: string): [Token, string] {
   if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
   if (c === '=') return [{ kind: "operator", value: '=', }, input.slice(1)];
   if (c === '+') return [{ kind: "operator", value: '+', }, input.slice(1)];
-  if (c === '-') return [{ kind: "operator", value: '-', }, input.slice(1)];
   if (c === '/') return [{ kind: "operator", value: '/', }, input.slice(1)];
   if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];
   if (c === '\n') return [{ kind: "newline" }, input.slice(1)];

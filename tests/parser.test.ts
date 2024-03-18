@@ -98,12 +98,13 @@ test("parse nested function call", () => {
 });
 
 test("parse function definition with no parameters", () => {
-    const tokens = tokenize('fn() { 42 }');
+    const tokens = tokenize('fn() -> i32 { 42 }');
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
     const expected = [{
         kind: "function",
         value: {
             parameters: [],
+            returnType: { kind: "symbol", value: "i32" },
             body: { kind: "int", value: "42" }
         }
     }, []];
@@ -111,7 +112,7 @@ test("parse function definition with no parameters", () => {
 });
 
 test("parse function definition with one parameter", () => {
-    const tokens = tokenize('fn(x: i64) { x }');
+    const tokens = tokenize('fn(x: i64) -> i64 { x }');
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
     const expected = [{
         kind: "function",
@@ -122,6 +123,7 @@ test("parse function definition with one parameter", () => {
                     type: { kind: "symbol", value: "i64" }
                 }
             ],
+            returnType: { kind: "symbol", value: "i64" },
             body: { kind: "symbol", value: "x" }
         }
     }, []];
@@ -129,7 +131,7 @@ test("parse function definition with one parameter", () => {
 });
 
 test("parse function definition with two parameters", () => {
-    const tokens = tokenize('fn(x: i64, y: bool) { f(x, y) }');
+    const tokens = tokenize('fn(x: i64, y: bool) -> f64 { f(x, y) }');
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
     const expected = [{
         kind: "function",
@@ -144,6 +146,7 @@ test("parse function definition with two parameters", () => {
                     type: { kind: "symbol", value: "bool" }
                 }
             ],
+            returnType: { kind: "symbol", value: "f64" },
             body: {
                 kind: "call",
                 value: {
@@ -161,7 +164,7 @@ test("parse function definition with two parameters", () => {
 
 test("parse function definition across multiple lines", () => {
     const tokens = tokenize(`
-        fn(x: i64, y: bool) {
+        fn(x: i64, y: bool) -> f64 {
             f(x, y)
         }
     `.trim());
@@ -179,6 +182,7 @@ test("parse function definition across multiple lines", () => {
                     type: { kind: "symbol", value: "bool" }
                 }
             ],
+            returnType: { kind: "symbol", value: "f64" },
             body: {
                 kind: "call",
                 value: {
@@ -293,7 +297,7 @@ test("parse binary op * then +", () => {
 
 test("parse function definition with block for body", () => {
     const tokens = tokenize(`
-        fn(x: i64, y: i64) {
+        fn(x: i64, y: i64) -> i64 {
             x2 = x * x
             y2 = y * y
             x2 + y2
@@ -313,6 +317,7 @@ test("parse function definition with block for body", () => {
                     type: { kind: "symbol", value: "i64" }
                 }
             ],
+            returnType: { kind: "symbol", value: "i64" },
             body: {
                 kind: "block",
                 value: [

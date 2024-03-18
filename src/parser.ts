@@ -19,6 +19,7 @@ export type Function = {
     kind: "function";
     value: {
         parameters: Parameter[];
+        returnType: Expression;
         body: Expression;
     }
 }
@@ -174,7 +175,9 @@ function trimNewlines(tokens: Token[]): Token[] {
 function parseFunction(tokens: Token[], _: Expression, precedence: Precedence): [Expression, Token[]] {
     tokens = tokens.slice(1);
     const [parameters, rest] = parseFunctionParameters(tokens, _, precedence);
-    tokens = consume(rest, { kind: "delimiter", value: "{" });
+    tokens = consume(rest, { kind: "delimiter", value: "->" });
+    const [returnType, rest2] = parseExpression(tokens, precedence);
+    tokens = consume(rest2, { kind: "delimiter", value: "{" });
     const expressions: Expression[] = []
     while (tokens.length !== 0) {
         tokens = trimNewlines(tokens);
@@ -188,11 +191,11 @@ function parseFunction(tokens: Token[], _: Expression, precedence: Precedence): 
                             case 0: throw new Error('Expected expression');
                             case 1: return [{
                                 kind: "function",
-                                value: { parameters, body: expressions[0] }
+                                value: { parameters, returnType, body: expressions[0] }
                             }, tokens]
                             default: return [{
                                 kind: "function",
-                                value: { parameters, body: { kind: "block", value: expressions } }
+                                value: { parameters, returnType, body: { kind: "block", value: expressions } }
                             }, tokens]
                         }
                         break
