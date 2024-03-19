@@ -1,5 +1,6 @@
 import { tokenize } from './tokenizer'
 import { parse } from './parser'
+import { CompilerError } from './compilerError'
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,9 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
             output.innerHTML = JSON.stringify(ast, null, 4)
             errorOutput.style.display = 'none'
         } catch (error) {
-            console.warn(error)
-            errorOutput.innerHTML = error.toString()
-            errorOutput.style.display = 'block'
+            if (error instanceof CompilerError) {
+                console.warn(error)
+                errorOutput.innerHTML = error.message
+                errorOutput.style.display = 'block'
+            } else {
+                console.warn(error)
+                errorOutput.innerHTML = (error as any).toString()
+                errorOutput.style.display = 'block'
+            }
         }
     }
     updateAst()

@@ -1,3 +1,5 @@
+import { CompilerError } from "./compilerError";
+
 export type Symbol = {
   kind: "symbol";
   value: string;
@@ -125,7 +127,14 @@ function nextToken(input: string): [Token, string] {
   if (c === '/') return [{ kind: "operator", value: '/', }, input.slice(1)];
   if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];
   if (c === '\n') return [{ kind: "newline" }, input.slice(1)];
-  throw new Error(`Unexpected character: ${c}`);
+  throw new CompilerError({
+    kind: "invalid token",
+    token: c,
+    span: {
+      start: { line: 0, column: 0 },
+      end: { line: 0, column: 0 }
+    }
+  });
 }
 
 export function tokenize(input: string): Token[] {
