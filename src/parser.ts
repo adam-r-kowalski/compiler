@@ -49,6 +49,16 @@ export type Block = {
     value: Expression[];
 }
 
+export type If = {
+    kind: "if";
+    value: {
+        condition: Expression;
+        then: Expression;
+        else: Expression;
+    }
+
+}
+
 export type Expression
     = Symbol
     | Int
@@ -59,14 +69,43 @@ export type Expression
     | BinaryOp
     | Define
     | Block
+    | If
 
 export type Ast = { [name: string]: Expression };
+
+function parseConditional(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
+    const [condition, rest] = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    tokens = consume(rest, { kind: "delimiter", value: "{" });
+    const [thenBranch, rest2] = parseExpression(tokens, precedence);
+    tokens = consume(rest2, { kind: "delimiter", value: "}" });
+    tokens = consume(tokens, { kind: "symbol", value: "else" });
+    tokens = consume(tokens, { kind: "delimiter", value: "{" });
+    const [elseBranch, rest3] = parseExpression(tokens, precedence);
+    tokens = consume(rest3, { kind: "delimiter", value: "}" });
+    return [{
+        kind: "if",
+        value: {
+            condition,
+            then: thenBranch,
+            else: elseBranch,
+        }
+    }, tokens];
+
+}
+
+
+function parseSymbol(tokens: Token[], symbol: Symbol): [Expression, Token[]] {
+    switch (symbol.value) {
+        case "if": return parseConditional(tokens, precedenceOf.lowestPrecedence);
+        default: return [symbol, tokens];
+    }
+}
 
 function parsePrefix(tokens: Token[]): [Expression, Token[]] {
     if (tokens.length === 0) throw new Error('Unexpected end of input');
     const token = tokens[0];
     switch (token.kind) {
-        case "symbol": return [token, tokens.slice(1)];
+        case "symbol": return parseSymbol(tokens.slice(1), token);
         case "int": return [token, tokens.slice(1)];
         case "float": return [token, tokens.slice(1)];
         case "string": return [token, tokens.slice(1)];

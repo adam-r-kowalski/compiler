@@ -25,7 +25,7 @@ export type Delimiter = {
 
 export type Operator = {
   kind: "operator";
-  value: "=" | "+" | "-" | "*" | "/";
+  value: "=" | "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==";
 }
 
 export type Newline = {
@@ -99,10 +99,9 @@ function tokenizeString(input: string): [String, string] {
   return [{ kind: "string", value }, rest.slice(1)];
 }
 
-function tokenizeSubtractOrArrow(input: string): [Delimiter | Operator, string] {
-  if (input.length === 0) return [{ kind: "operator", value: '-' }, input];
-  if (input[0] === '>') return [{ kind: "delimiter", value: '->' }, input.slice(1)];
-  return [{ kind: "operator", value: '-' }, input];
+function either(input: string, oneLetter: Delimiter | Operator, twoLetter: Delimiter | Operator): [Token, string] {
+  if (input.length > 1 && input[1] === twoLetter.value[1]) return [twoLetter, input.slice(2)];
+  return [oneLetter, input.slice(1)];
 }
 
 function nextToken(input: string): [Token, string] {
@@ -110,7 +109,10 @@ function nextToken(input: string): [Token, string] {
   if (isAlphabetic(c) || c === '_') return tokenizeSymbol(input);
   if (isNumeric(c) || c === '.') return tokenizeNumber(input);
   if (c === '"') return tokenizeString(input.slice(1))
-  if (c === '-') return tokenizeSubtractOrArrow(input.slice(1));
+  if (c === '-') return either(input, { kind: "operator", value: '-' }, { kind: "delimiter", value: '->' });
+  if (c === '<') return either(input, { kind: "operator", value: '<' }, { kind: "operator", value: '<=' });
+  if (c === '>') return either(input, { kind: "operator", value: '>' }, { kind: "operator", value: '>=' });
+  if (c === '=') return either(input, { kind: "operator", value: '=' }, { kind: "operator", value: '==' });
   if (c === '(') return [{ kind: "delimiter", value: '(', }, input.slice(1)];
   if (c === ')') return [{ kind: "delimiter", value: ')', }, input.slice(1)];
   if (c === '[') return [{ kind: "delimiter", value: '[', }, input.slice(1)];
@@ -119,7 +121,6 @@ function nextToken(input: string): [Token, string] {
   if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
   if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
   if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
-  if (c === '=') return [{ kind: "operator", value: '=', }, input.slice(1)];
   if (c === '+') return [{ kind: "operator", value: '+', }, input.slice(1)];
   if (c === '/') return [{ kind: "operator", value: '/', }, input.slice(1)];
   if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];

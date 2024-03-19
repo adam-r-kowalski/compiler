@@ -49,7 +49,7 @@ test("tokenize string", () => {
 });
 
 test("tokenize delimiter", () => {
-  const actual = tokenize("()[]{},.:->");
+  const actual = tokenize("( ) [ ] { } , . : ->");
   const expected = [
     { kind: "delimiter", value: "(" },
     { kind: "delimiter", value: ")" },
@@ -66,13 +66,18 @@ test("tokenize delimiter", () => {
 });
 
 test("tokenize operator", () => {
-  const actual = tokenize("=+-/*");
+  const actual = tokenize("= + - / * > < == <= >=");
   const expected = [
     { kind: "operator", value: "=" },
     { kind: "operator", value: "+" },
     { kind: "operator", value: "-" },
     { kind: "operator", value: "/" },
     { kind: "operator", value: "*" },
+    { kind: "operator", value: ">" },
+    { kind: "operator", value: "<" },
+    { kind: "operator", value: "==" },
+    { kind: "operator", value: "<=" },
+    { kind: "operator", value: ">=" }
   ];
   expect(actual).toEqual(expected);
 });

@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import { tokenize } from "../src/tokenizer";
 import { parseExpression } from "../src/parser";
 import * as precedenceOf from "../src/precedenceOf";
+import { k } from "vitest/dist/reporters-P7C2ytIv.js";
 
 test("parse symbol", () => {
     const tokens = tokenize("foo");
@@ -363,3 +364,31 @@ test("parse function definition with block for body", () => {
     }, []];
     expect(actual).toEqual(expected);
 });
+
+test("parse if expression", () => {
+    const tokens = tokenize('if x > 5 { x * x } else { x }'.trim());
+    const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
+    const expected = [{
+        kind: "if",
+        value: {
+            condition: {
+                kind: "binaryOp",
+                value: {
+                    op: ">",
+                    left: { kind: "symbol", value: "x" },
+                    right: { kind: "int", value: "5" },
+                }
+            },
+            then: {
+                kind: "binaryOp",
+                value: {
+                    op: "*",
+                    left: { kind: "symbol", value: "x" },
+                    right: { kind: "symbol", value: "x" }
+                }
+            },
+            else: { kind: "symbol", value: "x" }
+        },
+    }, []]
+    expect(actual).toEqual(expected);
+})
