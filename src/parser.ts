@@ -73,15 +73,11 @@ export type Expression
 
 export type Ast = { [name: string]: Expression };
 
-function parseConditional(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
+function parseConditional(tokens: Token[]): [Expression, Token[]] {
     const [condition, rest] = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    tokens = consume(rest, { kind: "delimiter", value: "{" });
-    const [thenBranch, rest2] = parseExpression(tokens, precedence);
-    tokens = consume(rest2, { kind: "delimiter", value: "}" });
-    tokens = consume(tokens, { kind: "symbol", value: "else" });
-    tokens = consume(tokens, { kind: "delimiter", value: "{" });
-    const [elseBranch, rest3] = parseExpression(tokens, precedence);
-    tokens = consume(rest3, { kind: "delimiter", value: "}" });
+    const [thenBranch, rest2] = parseBlock(rest);
+    tokens = consume(rest2, { kind: "symbol", value: "else" });
+    const [elseBranch, rest3] = parseBlock(tokens);
     return [{
         kind: "if",
         value: {
@@ -89,7 +85,7 @@ function parseConditional(tokens: Token[], precedence: Precedence): [Expression,
             then: thenBranch,
             else: elseBranch,
         }
-    }, tokens];
+    }, rest3];
 
 }
 
@@ -117,12 +113,20 @@ function parseFunctionParameters(tokens: Token[], precedence: Precedence): [Para
     throw new Error('Unexpected end of input');
 }
 
-function parseFunction(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
-    tokens = tokens.slice(1);
-    const [parameters, rest] = parseFunctionParameters(tokens, precedence);
-    tokens = consume(rest, { kind: "delimiter", value: "->" });
-    const [returnType, rest2] = parseExpression(tokens, precedence);
-    tokens = consume(rest2, { kind: "delimiter", value: "{" });
+function trimNewlines(tokens: Token[]): Token[] {
+    while (tokens.length !== 0) {
+        const token = tokens[0];
+        if (token.kind === "newline") {
+            tokens = tokens.slice(1);
+        } else {
+            return tokens;
+        }
+    }
+    return tokens;
+}
+
+function parseBlock(tokens: Token[]): [Expression, Token[]] {
+    tokens = consume(tokens, { kind: "delimiter", value: "{" });
     const expressions: Expression[] = []
     while (tokens.length !== 0) {
         tokens = trimNewlines(tokens);
@@ -134,36 +138,41 @@ function parseFunction(tokens: Token[], precedence: Precedence): [Expression, To
                         tokens = tokens.slice(1);
                         switch (expressions.length) {
                             case 0: throw new Error('Expected expression');
-                            case 1: return [{
-                                kind: "function",
-                                value: { parameters, returnType, body: expressions[0] }
-                            }, tokens]
-                            default: return [{
-                                kind: "function",
-                                value: { parameters, returnType, body: { kind: "block", value: expressions } }
-                            }, tokens]
+                            case 1: return [expressions[0], tokens];
+                            default: return [{ kind: "block", value: expressions }, tokens]
                         }
-                        break
                     default:
                         const [expression, newTokens] = parseExpression(tokens, precedenceOf.lowestPrecedence);
                         expressions.push(expression)
                         tokens = newTokens
-                        break
+                        break;
                 }
                 break
             default:
                 const [expression, newTokens] = parseExpression(tokens, precedenceOf.lowestPrecedence);
                 expressions.push(expression)
                 tokens = newTokens
-                break
+                break;
         }
     }
+    throw new Error('Unexpected end of input');
 }
 
+function parseFunction(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
+    tokens = tokens.slice(1);
+    const [parameters, rest] = parseFunctionParameters(tokens, precedence);
+    tokens = consume(rest, { kind: "delimiter", value: "->" });
+    const [returnType, rest2] = parseExpression(tokens, precedence);
+    const [body, rest3] = parseBlock(rest2);
+    return [{
+        kind: "function",
+        value: { parameters, returnType, body }
+    }, rest3];
+}
 
 function parseSymbol(tokens: Token[], symbol: Symbol): [Expression, Token[]] {
     switch (symbol.value) {
-        case "if": return parseConditional(tokens, precedenceOf.lowestPrecedence);
+        case "if": return parseConditional(tokens);
         case "fn": return parseFunction(tokens, precedenceOf.functionDefinition);
         default: return [symbol, tokens];
     }
@@ -235,18 +244,6 @@ function consume(tokens: Token[], expected: Token): Token[] {
         throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(token)}`);
     }
     return tokens.slice(1);
-}
-
-function trimNewlines(tokens: Token[]): Token[] {
-    while (tokens.length !== 0) {
-        const token = tokens[0];
-        if (token.kind === "newline") {
-            tokens = tokens.slice(1);
-        } else {
-            return tokens;
-        }
-    }
-    return tokens;
 }
 
 function parseBinaryOp(op: BinaryOpKind): [InfixParser, Precedence] {
