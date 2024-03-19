@@ -24,7 +24,7 @@ export type Function = {
     }
 }
 
-export type BinaryOpKind = "+" | "-" | "*" | "/";
+export type BinaryOpKind = "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==";
 
 export type BinaryOp = {
     kind: "binaryOp";
@@ -293,5 +293,19 @@ export function parseExpression(tokens: Token[], precedence: Precedence): [Expre
 }
 
 export function parse(input: Token[]): Ast {
-    return {};
+    let ast: Ast = {};
+    input = trimNewlines(input);
+    while (input.length !== 0) {
+        input = trimNewlines(input);
+        const [expression, rest] = parseExpression(input, precedenceOf.lowestPrecedence);
+        input = rest;
+        switch (expression.kind) {
+            case "define":
+                ast[expression.value.name] = expression.value.value;
+                break;
+            default:
+                throw new Error(`Unexpected expression: ${JSON.stringify(expression)}`);
+        }
+    }
+    return ast;
 }

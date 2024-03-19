@@ -1,8 +1,7 @@
 import { expect, test } from "vitest";
 import { tokenize } from "../src/tokenizer";
-import { parseExpression } from "../src/parser";
+import { parseExpression, parse } from "../src/parser";
 import * as precedenceOf from "../src/precedenceOf";
-import { k } from "vitest/dist/reporters-P7C2ytIv.js";
 
 test("parse symbol", () => {
     const tokens = tokenize("foo");
@@ -391,4 +390,55 @@ test("parse if expression", () => {
         },
     }, []]
     expect(actual).toEqual(expected);
+})
+
+test("parse into ast", () => {
+    const tokens = tokenize(`
+        id = fn(x: i64) -> i64 { x }
+
+        start = fn() -> i64 { id(42) }
+    `.trim());
+    const actual = parse(tokens);
+    const expected = {
+        id: {
+            kind: "function",
+            value: {
+                parameters: [
+                    {
+                        name: "x",
+                        type: { kind: "symbol", value: "i64" }
+                    },
+                ],
+                returnType: { kind: "symbol", value: "i64" },
+                body: {
+                    kind: "symbol",
+                    value: "x"
+                }
+            }
+        },
+        start: {
+            kind: "function",
+            value: {
+                parameters: [],
+                returnType: { kind: "symbol", value: "i64" },
+                body: {
+                    kind: "call",
+                    value: {
+                        function: {
+                            kind: "symbol",
+                            value: "id"
+                        },
+                        arguments: [
+                            {
+                                kind: "int",
+                                value: "42"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+    expect(actual).toEqual(expected);
+
 })
