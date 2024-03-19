@@ -5,12 +5,88 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compiler</title>
-    <script src="src/index.ts"></script>
+    <script type="module" src="src/index.ts"></script>
+
+    <style>
+        :root {
+            --gap: 1em;
+            --padding: 1em;
+            /* Light mode colors */
+            --background-color: #fff;
+            --text-color: #000;
+            --error-background-color: #f8d7da;
+            --error-text-color: #721c24;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark mode colors */
+                --background-color: #121212;
+                --text-color: #e0e0e0;
+                --error-background-color: #d32f2f;
+                --error-text-color: #ffffff;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        textarea,
+        pre {
+            padding: var(--padding);
+            flex: 1;
+            overflow: auto;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-family: monospace;
+        }
+
+        #error {
+            background-color: var(--error-background-color);
+            color: var(--error-text-color);
+        }
+
+        #code {
+            font-size: 1em;
+        }
+    </style>
+
 </head>
 
 <body>
-    <textarea id="code" cols="80" rows="20"></textarea>
-    <pre id="output"></pre>
+    <main>
+        <textarea id="code" cols="80" rows="20" aria-label="Code Input">
+id = fn(x: i64) -> i64 {
+    x
+}
+
+start = fn() -> i64 {
+    id(42)
+</textarea>
+        <pre id="output" aria-label="Code Output">Ast</pre>
+    </main>
+
+    <footer>
+        <pre id="error" aria-label="Error Output"></pre>
+    </footer>
 </body>
 
 </html>
