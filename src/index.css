@@ -6,6 +6,7 @@
     --active-border: 1px solid #7aa2f7;
     --error-color: #f7768e;
     --font-family: monospace;
+    --max-error-height: 200px;
 }
 
 * {

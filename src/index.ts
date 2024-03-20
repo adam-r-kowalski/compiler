@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showError(message: string) {
         errorMessages.innerHTML = message;
-        errorMessages.style.maxHeight = '100px';
+        errorMessages.style.maxHeight = 'var(--max-error-height)';
         errorMessages.style.padding = 'var(--padding)';
     }
 
