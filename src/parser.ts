@@ -340,8 +340,9 @@ export function parseExpression(tokens: Token[], precedence: Precedence): [Expre
 export function parse(input: Token[]): Ast {
     let ast: Ast = {};
     input = trimNewlines(input);
-    while (input.length !== 0) {
+    while (true) {
         input = trimNewlines(input);
+        if (input.length === 0) return ast;
         const [expression, rest] = parseExpression(input, precedenceOf.lowestPrecedence);
         input = rest;
         switch (expression.kind) {

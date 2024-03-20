@@ -442,3 +442,56 @@ test("parse into ast", () => {
     expect(actual).toEqual(expected);
 
 })
+
+test("parse into ast with newlines after last function", () => {
+    const tokens = tokenize(`
+        id = fn(x: i64) -> i64 { x }
+
+        start = fn() -> i64 { id(42) }
+
+
+    `.trimStart());
+    const actual = parse(tokens);
+    const expected = {
+        id: {
+            kind: "function",
+            value: {
+                parameters: [
+                    {
+                        name: "x",
+                        type: { kind: "symbol", value: "i64" }
+                    },
+                ],
+                returnType: { kind: "symbol", value: "i64" },
+                body: {
+                    kind: "symbol",
+                    value: "x"
+                }
+            }
+        },
+        start: {
+            kind: "function",
+            value: {
+                parameters: [],
+                returnType: { kind: "symbol", value: "i64" },
+                body: {
+                    kind: "call",
+                    value: {
+                        function: {
+                            kind: "symbol",
+                            value: "id"
+                        },
+                        arguments: [
+                            {
+                                kind: "int",
+                                value: "42"
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+    expect(actual).toEqual(expected);
+
+})
