@@ -1,0 +1,57 @@
+:root {
+    --padding: 8px;
+    --background-color: #24283b;
+    --font-color: #c0caf5;
+    --inactive-border: 1px solid #292e42;
+    --active-border: 1px solid #7aa2f7;
+    --error-color: #f7768e;
+    --font-family: monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: 1fr auto;
+    grid-template-areas:
+        "code-editor ast-output"
+        "error-messages error-messages";
+    height: 100vh;
+}
+
+#code-editor {
+    grid-area: code-editor;
+    padding: var(--padding);
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    color: var(--font-color);
+    border: var(--active-border);
+    resize: none;
+}
+
+#ast-output {
+    grid-area: ast-output;
+    padding: var(--padding);
+    font-family: var(--font-family);
+    overflow: scroll;
+    background-color: var(--background-color);
+    border: var(--inactive-border);
+    color: var(--font-color);
+}
+
+#error-messages {
+    grid-area: error-messages;
+    padding: 0;
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    border: var(--inactive-border);
+    color: var(--error-color);
+    max-height: 0;
+    overflow: scroll;
+    transition: max-height 200ms ease-in-out, padding 200ms ease-in-out;
+}

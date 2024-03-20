@@ -1,31 +1,36 @@
-import { tokenize } from './tokenizer'
-import { parse } from './parser'
-import { CompilerError } from './compilerError'
-
+import { tokenize } from './tokenizer';
+import { parse } from './parser';
+import { CompilerError } from './compilerError';
 
 document.addEventListener('DOMContentLoaded', () => {
-    const code = document.getElementById('code') as HTMLTextAreaElement
-    const output = document.getElementById('output') as HTMLPreElement
-    const errorOutput = document.getElementById('error') as HTMLPreElement
+    const codeEditor = document.getElementById('code-editor') as HTMLTextAreaElement;
+    const astOutput = document.getElementById('ast-output') as HTMLPreElement;
+    const errorMessages = document.getElementById('error-messages') as HTMLPreElement;
+
+    function showError(message: string) {
+        errorMessages.innerHTML = message;
+        errorMessages.style.maxHeight = '100px';
+        errorMessages.style.padding = 'var(--padding)';
+    }
+
+    function hideError() {
+        errorMessages.style.maxHeight = '0';
+        errorMessages.style.padding = '0';
+    }
+
     function updateAst() {
         try {
-            let tokens = tokenize(code.value)
-            let ast = parse(tokens)
-            output.innerHTML = JSON.stringify(ast, null, 4)
-            errorOutput.style.display = 'none'
+            let tokens = tokenize(codeEditor.value);
+            let ast = parse(tokens);
+            astOutput.innerHTML = JSON.stringify(ast, null, 4);
+            hideError();
         } catch (error) {
-            if (error instanceof CompilerError) {
-                console.warn(error)
-                errorOutput.innerHTML = error.message
-                errorOutput.style.display = 'block'
-            } else {
-                console.warn(error)
-                errorOutput.innerHTML = (error as Error).message
-                errorOutput.style.display = 'block'
-            }
+            console.warn(error);
+            const errorMessage = (error instanceof CompilerError) ? error.message : (error as Error).message;
+            showError(errorMessage);
         }
     }
-    updateAst()
-    code.addEventListener('input', updateAst)
-})
 
+    updateAst();
+    codeEditor.addEventListener('input', updateAst);
+});
