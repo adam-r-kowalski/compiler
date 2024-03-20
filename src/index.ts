@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const codeEditor = document.getElementById('code-editor') as HTMLTextAreaElement;
     const astOutput = document.getElementById('ast-output') as HTMLPreElement;
     const errorMessages = document.getElementById('error-messages') as HTMLPreElement;
+    let debounceTimer: number;
 
     function showError(message: string) {
         errorMessages.innerHTML = message;
@@ -31,6 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const debounceRate = 500;
+
+    function debounceUpdateAst() {
+        clearTimeout(debounceTimer);
+        debounceTimer = window.setTimeout(() => {
+            updateAst();
+        }, debounceRate);
+    }
+
+    codeEditor.addEventListener('input', debounceUpdateAst);
+
     updateAst();
-    codeEditor.addEventListener('input', updateAst);
 });
