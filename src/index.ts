@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 errorOutput.style.display = 'block'
             } else {
                 console.warn(error)
-                errorOutput.innerHTML = (error as any).toString()
+                errorOutput.innerHTML = (error as Error).message
                 errorOutput.style.display = 'block'
             }
         }

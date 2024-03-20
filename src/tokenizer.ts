@@ -128,8 +128,8 @@ function nextToken(input: string): [Token, string] {
   if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];
   if (c === '\n') return [{ kind: "newline" }, input.slice(1)];
   throw new CompilerError({
-    kind: "invalid token",
-    token: c,
+    kind: "tokenization invalid character error",
+    character: c,
     span: {
       start: { line: 0, column: 0 },
       end: { line: 0, column: 0 }

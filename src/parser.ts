@@ -1,6 +1,7 @@
 import type { Token, Delimiter, Symbol, Int, Float, String, Operator } from './tokenizer'
 import type { Precedence } from './precedenceOf'
 import * as precedenceOf from './precedenceOf'
+import { CompilerError } from './compilerError'
 
 export type Call = {
     kind: "call";
@@ -104,13 +105,24 @@ function parseFunctionParameters(tokens: Token[], precedence: Precedence): [Para
                 switch (token.value) {
                     case ")": return [parameters, tokens.slice(1)];
                     case ",": tokens = tokens.slice(1); break;
-                    default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+                    default: throw new CompilerError({
+                        kind: "parsing function parameter invalid token error",
+                        token,
+                        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+                    });
                 }
                 break
-            default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+            default: throw new CompilerError({
+                kind: "parsing function parameter invalid token error",
+                token,
+                span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+            });
         }
     }
-    throw new Error('Unexpected end of input');
+    throw new CompilerError({
+        kind: 'parsing function parameter expecting closing delimiter error',
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
 }
 
 function trimNewlines(tokens: Token[]): Token[] {
@@ -126,10 +138,14 @@ function trimNewlines(tokens: Token[]): Token[] {
 }
 
 function parseBlock(tokens: Token[]): [Expression, Token[]] {
-    tokens = consume(tokens, { kind: "delimiter", value: "{" });
     const expressions: Expression[] = []
-    while (tokens.length !== 0) {
+    tokens = consume(tokens, { kind: "delimiter", value: "{" });
+    while (true) {
         tokens = trimNewlines(tokens);
+        if (tokens.length === 0) throw new CompilerError({
+            kind: "parsing block expecting closing delimiter error",
+            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        })
         const token = tokens[0];
         switch (token.kind) {
             case "delimiter":
@@ -137,7 +153,7 @@ function parseBlock(tokens: Token[]): [Expression, Token[]] {
                     case "}":
                         tokens = tokens.slice(1);
                         switch (expressions.length) {
-                            case 0: throw new Error('Expected expression');
+                            case 0: return [{ kind: "block", value: [] }, tokens]
                             case 1: return [expressions[0], tokens];
                             default: return [{ kind: "block", value: expressions }, tokens]
                         }
@@ -155,7 +171,10 @@ function parseBlock(tokens: Token[]): [Expression, Token[]] {
                 break;
         }
     }
-    throw new Error('Unexpected end of input');
+    throw new CompilerError({
+        kind: "parsing block expecting closing delimiter error",
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
 }
 
 function parseFunction(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
@@ -179,14 +198,21 @@ function parseSymbol(tokens: Token[], symbol: Symbol): [Expression, Token[]] {
 }
 
 function parsePrefix(tokens: Token[]): [Expression, Token[]] {
-    if (tokens.length === 0) throw new Error('Unexpected end of input');
+    if (tokens.length === 0) throw new CompilerError({
+        kind: "parsing prefix expecting expression error",
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
     const token = tokens[0];
     switch (token.kind) {
         case "symbol": return parseSymbol(tokens.slice(1), token);
         case "int": return [token, tokens.slice(1)];
         case "float": return [token, tokens.slice(1)];
         case "string": return [token, tokens.slice(1)];
-        default: throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+        default: throw new CompilerError({
+            kind: "parsing prefix invalid token error",
+            token,
+            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        });
     }
 }
 
@@ -211,11 +237,18 @@ function parseCall(tokens: Token[], prefix: Expression, precedence: Precedence):
         args.push(argument);
         tokens = rest;
     }
-    throw new Error('Unexpected end of input');
+    throw new CompilerError({
+        kind: "parsing call expecting closing delimiter error",
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
 }
 
 function parseDefineWithTypeAnnotation(tokens: Token[], name: Expression, precedence: Precedence): [Expression, Token[]] {
-    if (name.kind !== "symbol") throw new Error('Expected symbol');
+    if (name.kind !== "symbol") throw new CompilerError({
+        kind: "parse define expecting symbol error",
+        name,
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
     tokens = tokens.slice(1);
     const [type, rest] = parseExpression(tokens, precedenceOf.variableDefinition + 1);
     tokens = consume(rest, { kind: "operator", value: "=" });
@@ -232,7 +265,10 @@ function infixParserForDelimiter(delimiter: Delimiter): [InfixParser, Precedence
 }
 
 function consume(tokens: Token[], expected: Token): Token[] {
-    if (tokens.length === 0) throw new Error('Unexpected end of input');
+    if (tokens.length === 0) throw new CompilerError({
+        kind: "consume expecting expression error",
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
     const token = tokens[0];
     function valueOf(token: Token): string | null {
         switch (token.kind) {
@@ -241,7 +277,12 @@ function consume(tokens: Token[], expected: Token): Token[] {
         }
     }
     if (token.kind !== expected.kind || valueOf(token) !== valueOf(expected)) {
-        throw new Error(`Expected ${JSON.stringify(expected)}, got ${JSON.stringify(token)}`);
+        throw new CompilerError({
+            kind: "consume invalid token error",
+            expected,
+            actual: token,
+            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        })
     }
     return tokens.slice(1);
 }
@@ -256,7 +297,11 @@ function parseBinaryOp(op: BinaryOpKind): [InfixParser, Precedence] {
 }
 
 function parseDefine(tokens: Token[], name: Expression, precedence: Precedence): [Expression, Token[]] {
-    if (name.kind !== "symbol") throw new Error('Expected symbol');
+    if (name.kind !== "symbol") throw new CompilerError({
+        kind: "parse define expecting symbol error",
+        name,
+        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+    });
     tokens = tokens.slice(1);
     const [value, rest] = parseExpression(tokens, precedence);
     return [{ kind: "define", value: { name: name.value, value } }, rest];
@@ -304,7 +349,11 @@ export function parse(input: Token[]): Ast {
                 ast[expression.value.name] = expression.value.value;
                 break;
             default:
-                throw new Error(`Unexpected expression: ${JSON.stringify(expression)}`);
+                throw new CompilerError({
+                    kind: "parse invalid expression error",
+                    expression,
+                    span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+                });
         }
     }
     return ast;
