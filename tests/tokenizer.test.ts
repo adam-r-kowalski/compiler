@@ -4,13 +4,13 @@ import { tokenize } from "../src/tokenizer";
 test("tokenize symbol", () => {
   const actual = tokenize("foo bar baz snake_case camelCase PascalCase name2");
   const expected = [
-    { kind: "symbol", value: "foo", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 3 } } },
-    { kind: "symbol", value: "bar", span: { start: { line: 0, column: 4 }, end: { line: 0, column: 7 } } },
-    { kind: "symbol", value: "baz", span: { start: { line: 0, column: 8 }, end: { line: 0, column: 11 } } },
-    { kind: "symbol", value: "snake_case", span: { start: { line: 0, column: 12 }, end: { line: 0, column: 22 } } },
-    { kind: "symbol", value: "camelCase", span: { start: { line: 0, column: 23 }, end: { line: 0, column: 32 } } },
-    { kind: "symbol", value: "PascalCase", span: { start: { line: 0, column: 33 }, end: { line: 0, column: 43 } } },
-    { kind: "symbol", value: "name2", span: { start: { line: 0, column: 44 }, end: { line: 0, column: 49 } } },
+    { kind: "symbol", value: "foo", span: [[0, 0], [0, 3]] },
+    { kind: "symbol", value: "bar", span: [[0, 4], [0, 7]] },
+    { kind: "symbol", value: "baz", span: [[0, 8], [0, 11]] },
+    { kind: "symbol", value: "snake_case", span: [[0, 12], [0, 22]] },
+    { kind: "symbol", value: "camelCase", span: [[0, 23], [0, 32]] },
+    { kind: "symbol", value: "PascalCase", span: [[0, 33], [0, 43]] },
+    { kind: "symbol", value: "name2", span: [[0, 44], [0, 49]] }
   ];
   expect(actual).toEqual(expected);
 });

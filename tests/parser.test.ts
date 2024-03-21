@@ -6,14 +6,14 @@ import * as precedenceOf from "../src/precedenceOf";
 test("parse symbol", () => {
     const tokens = tokenize("foo");
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    const expected = [{ kind: "symbol", value: "foo" }, []];
+    const expected = [{ kind: "symbol", value: "foo", span: [[0, 0], [0, 3]] }, []];
     expect(actual).toEqual(expected);
 });
 
 test("parse int", () => {
     const tokens = tokenize("42");
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    const expected = [{ kind: "int", value: "42" }, []];
+    const expected = [{ kind: "int", value: "42", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 2 } } }, []];
     expect(actual).toEqual(expected);
 });
 

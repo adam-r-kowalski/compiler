@@ -1,5 +1,5 @@
 import { CompilerError } from "./compilerError";
-import type { Span } from "./span";
+import type { Span, Position } from "./span";
 
 export type Symbol = {
   kind: "symbol";
@@ -76,10 +76,10 @@ function takeWhile(cursor: Cursor, predicate: (char: string) => boolean): [strin
     i++;
   }
   const taken = cursor.input.slice(0, i);
-  const start = cursor.span.start;
-  const end = { line: start.line, column: start.column + i };
-  const span = { start, end };
-  const next_span = { start: end, end: end };
+  const start = cursor.span[0];
+  const end: Position = [start[0], start[1] + i];
+  const span: Span = [start, end];
+  const next_span: Span = [end, end];
   const next_cursor = { span: next_span, input: cursor.input.slice(i) }
   return [taken, span, next_cursor];
 }
@@ -98,10 +98,10 @@ function takeWhileStatefull<State>(
     i++;
   }
   const taken = cursor.input.slice(0, i);
-  const start = cursor.span.start;
-  const end = { line: start.line, column: start.column + i };
-  const span = { start, end };
-  const next_span = { start: end, end: end };
+  const start = cursor.span[0];
+  const end: Position = [start[0], start[1] + i];
+  const span: Span = [start, end];
+  const next_span: Span = [end, end];
   const next_cursor = { span: next_span, input: cursor.input.slice(i) }
   return [taken, span, next_cursor, state];
 }
@@ -127,17 +127,17 @@ function tokenizeNumber(cursor: Cursor): [Int | Float | Delimiter, Cursor] {
 
 function advance(cursor: Cursor, by: number): Cursor {
   const input = cursor.input.slice(by);
-  const start = { line: cursor.span.start.line, column: cursor.span.start.column + by };
-  const end = cursor.span.end;
-  const span = { start, end };
+  const start: Position = [cursor.span[0][0], cursor.span[0][1]];
+  const end = cursor.span[1];
+  const span: Span = [start, end];
   return { span, input };
 }
 
 function tokenizeString(cursor: Cursor): [String, Cursor] {
   let [value, span, cursor2] = takeWhile(cursor, c => c !== '"');
   cursor2 = advance(cursor2, 1);
-  span.start.column -= 1;
-  span.end.column += 1;
+  span[0][1] -= 1;
+  span[1][1] += 1;
   return [{ kind: "string", value, span }, cursor2];
 }
 
@@ -153,26 +153,23 @@ function either(
 }
 
 function operatorFor(cursor: Cursor, value: OperatorKind): Operator {
-  const start = cursor.span.start;
-  const end = { line: start.line, column: start.column + value.length };
-  const span = { start, end };
+  const start = cursor.span[0];
+  const end: Position = [start[0], start[1] + value.length];
+  const span: Span = [start, end];
   return { kind: "operator", value, span };
 }
 
 function delimiterFor(cursor: Cursor, value: DelimiterKind): Delimiter {
-  const start = cursor.span.start;
-  const end = { line: start.line, column: start.column + value.length };
-  const span = { start, end };
+  const start = cursor.span[0];
+  const end: Position = [start[0], start[1] + value.length];
+  const span: Span = [start, end];
   return { kind: "delimiter", value, span };
 }
 
 function newline(cursor: Cursor): [Newline, Cursor] {
-  const span = {
-    start: cursor.span.start,
-    end: { line: cursor.span.start.line + 1, column: 0 }
-  }
+  const span: Span = [cursor.span[0], [cursor.span[0][0] + 1, 0]];
   const input = cursor.input.slice(1);
-  const next_span = { start: span.end, end: span.end };
+  const next_span: Span = [span[1], span[1]];
   return [{ kind: "newline", span }, { span: next_span, input }];
 }
 
@@ -203,16 +200,13 @@ function nextToken(cursor: Cursor): [Token, Cursor] {
   throw new CompilerError({
     kind: "tokenization invalid character error",
     character: c,
-    span: {
-      start: { line: 0, column: 0 },
-      end: { line: 0, column: 0 }
-    }
+    span: [[0, 0], [0, 0]]
   });
 }
 
 export function tokenize(input: string): Token[] {
   let tokens = [];
-  const span = { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } };
+  const span: Span = [[0, 0], [0, 0]];
   let cursor = { span, input };
   while (true) {
     const [_, _2, cursor2] = takeWhile(cursor, c => c === ' ');
