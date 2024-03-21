@@ -29,10 +29,10 @@ test("tokenize int", () => {
 test("tokenize float", () => {
   const actual = tokenize("42.5 .3 -.24");
   const expected = [
-    { kind: "float", value: "42.5", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 4 } } },
-    { kind: "float", value: ".3", span: { start: { line: 0, column: 5 }, end: { line: 0, column: 7 } } },
-    { kind: "operator", value: "-", span: { start: { line: 0, column: 8 }, end: { line: 0, column: 9 } } },
-    { kind: "float", value: ".24", span: { start: { line: 0, column: 9 }, end: { line: 0, column: 12 } } }
+    { kind: "float", value: "42.5", span: [[0, 0], [0, 4]] },
+    { kind: "float", value: ".3", span: [[0, 5], [0, 7]] },
+    { kind: "operator", value: "-", span: [[0, 8], [0, 9]] },
+    { kind: "float", value: ".24", span: [[0, 9], [0, 12]] }
   ];
   expect(actual).toEqual(expected);
 });
@@ -40,10 +40,10 @@ test("tokenize float", () => {
 test("tokenize string", () => {
   const actual = tokenize('"foo" "bar" "baz" "Hello World"');
   const expected = [
-    { kind: "string", value: "foo", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 5 } } },
-    { kind: "string", value: "bar", span: { start: { line: 0, column: 6 }, end: { line: 0, column: 11 } } },
-    { kind: "string", value: "baz", span: { start: { line: 0, column: 12 }, end: { line: 0, column: 17 } } },
-    { kind: "string", value: "Hello World", span: { start: { line: 0, column: 18 }, end: { line: 0, column: 31 } } }
+    { kind: "string", value: "foo", span: [[0, 0], [0, 5]] },
+    { kind: "string", value: "bar", span: [[0, 6], [0, 11]] },
+    { kind: "string", value: "baz", span: [[0, 12], [0, 17]] },
+    { kind: "string", value: "Hello World", span: [[0, 18], [0, 31]] }
   ];
   expect(actual).toEqual(expected);
 });
@@ -51,16 +51,16 @@ test("tokenize string", () => {
 test("tokenize delimiter", () => {
   const actual = tokenize("( ) [ ] { } , . : ->");
   const expected = [
-    { kind: "delimiter", value: "(", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 1 } } },
-    { kind: "delimiter", value: ")", span: { start: { line: 0, column: 2 }, end: { line: 0, column: 3 } } },
-    { kind: "delimiter", value: "[", span: { start: { line: 0, column: 4 }, end: { line: 0, column: 5 } } },
-    { kind: "delimiter", value: "]", span: { start: { line: 0, column: 6 }, end: { line: 0, column: 7 } } },
-    { kind: "delimiter", value: "{", span: { start: { line: 0, column: 8 }, end: { line: 0, column: 9 } } },
-    { kind: "delimiter", value: "}", span: { start: { line: 0, column: 10 }, end: { line: 0, column: 11 } } },
-    { kind: "delimiter", value: ",", span: { start: { line: 0, column: 12 }, end: { line: 0, column: 13 } } },
-    { kind: "delimiter", value: ".", span: { start: { line: 0, column: 14 }, end: { line: 0, column: 15 } } },
-    { kind: "delimiter", value: ":", span: { start: { line: 0, column: 16 }, end: { line: 0, column: 17 } } },
-    { kind: "delimiter", value: "->", span: { start: { line: 0, column: 18 }, end: { line: 0, column: 20 } } }
+    { kind: "delimiter", value: "(", span: [[0, 0], [0, 1]] },
+    { kind: "delimiter", value: ")", span: [[0, 2], [0, 3]] },
+    { kind: "delimiter", value: "[", span: [[0, 4], [0, 5]] },
+    { kind: "delimiter", value: "]", span: [[0, 6], [0, 7]] },
+    { kind: "delimiter", value: "{", span: [[0, 8], [0, 9]] },
+    { kind: "delimiter", value: "}", span: [[0, 10], [0, 11]] },
+    { kind: "delimiter", value: ",", span: [[0, 12], [0, 13]] },
+    { kind: "delimiter", value: ".", span: [[0, 14], [0, 15]] },
+    { kind: "delimiter", value: ":", span: [[0, 16], [0, 17]] },
+    { kind: "delimiter", value: "->", span: [[0, 18], [0, 20]] }
   ];
   expect(actual).toEqual(expected);
 });
@@ -68,27 +68,25 @@ test("tokenize delimiter", () => {
 test("tokenize operator", () => {
   const actual = tokenize("= + - / * > < == <= >=");
   const expected = [
-    { kind: "operator", value: "=", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 1 } } },
-    { kind: "operator", value: "+", span: { start: { line: 0, column: 2 }, end: { line: 0, column: 3 } } },
-    { kind: "operator", value: "-", span: { start: { line: 0, column: 4 }, end: { line: 0, column: 5 } } },
-    { kind: "operator", value: "/", span: { start: { line: 0, column: 6 }, end: { line: 0, column: 7 } } },
-    { kind: "operator", value: "*", span: { start: { line: 0, column: 8 }, end: { line: 0, column: 9 } } },
-    { kind: "operator", value: ">", span: { start: { line: 0, column: 10 }, end: { line: 0, column: 11 } } },
-    { kind: "operator", value: "<", span: { start: { line: 0, column: 12 }, end: { line: 0, column: 13 } } },
-    { kind: "operator", value: "==", span: { start: { line: 0, column: 14 }, end: { line: 0, column: 16 } } },
-    { kind: "operator", value: "<=", span: { start: { line: 0, column: 17 }, end: { line: 0, column: 19 } } },
-    { kind: "operator", value: ">=", span: { start: { line: 0, column: 20 }, end: { line: 0, column: 22 } } },
+    { kind: "operator", value: "=", span: [[0, 0], [0, 1]] },
+    { kind: "operator", value: "+", span: [[0, 2], [0, 3]] },
+    { kind: "operator", value: "-", span: [[0, 4], [0, 5]] },
+    { kind: "operator", value: "/", span: [[0, 6], [0, 7]] },
+    { kind: "operator", value: "*", span: [[0, 8], [0, 9]] },
+    { kind: "operator", value: ">", span: [[0, 10], [0, 11]] },
+    { kind: "operator", value: "<", span: [[0, 12], [0, 13]] },
+    { kind: "operator", value: "==", span: [[0, 14], [0, 16]] },
+    { kind: "operator", value: "<=", span: [[0, 17], [0, 19]] },
+    { kind: "operator", value: ">=", span: [[0, 20], [0, 22]] },
   ];
   expect(actual).toEqual(expected);
 });
 
 test("tokenize newline", () => {
-  const actual = tokenize(`
-
-`);
+  const actual = tokenize('\n\n');
   const expected = [
-    { kind: "newline", span: { start: { line: 0, column: 0 }, end: { line: 1, column: 0 } } },
-    { kind: "newline", span: { start: { line: 1, column: 0 }, end: { line: 2, column: 0 } } },
+    { kind: "newline", span: [[0, 0], [1, 0]] },
+    { kind: "newline", span: [[1, 0], [2, 0]] },
   ];
   expect(actual).toEqual(expected);
 });
