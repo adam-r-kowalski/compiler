@@ -2,18 +2,22 @@ import type { Token, Delimiter, Symbol, Int, Float, String, Operator } from './t
 import type { Precedence } from './precedenceOf'
 import * as precedenceOf from './precedenceOf'
 import { CompilerError } from './compilerError'
+import type { Span, Position } from './span'
+import type { S } from 'vitest/dist/reporters-P7C2ytIv.js'
 
 export type Call = {
     kind: "call";
     value: {
         function: Expression;
         arguments: Expression[];
-    }
+    };
+    span: Span;
 }
 
 export type Parameter = {
     name: string;
     type: Expression;
+    span: Span;
 }
 
 export type Function = {
@@ -22,7 +26,8 @@ export type Function = {
         parameters: Parameter[];
         returnType: Expression;
         body: Expression;
-    }
+    };
+    span: Span;
 }
 
 export type BinaryOpKind = "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==";
@@ -33,7 +38,8 @@ export type BinaryOp = {
         op: BinaryOpKind,
         left: Expression;
         right: Expression;
-    }
+    };
+    span: Span;
 }
 
 export type Define = {
@@ -42,12 +48,14 @@ export type Define = {
         name: string,
         type?: Expression;
         value: Expression;
-    }
+    };
+    span: Span;
 }
 
 export type Block = {
     kind: "block";
     value: Expression[];
+    span: Span;
 }
 
 export type If = {
@@ -57,7 +65,7 @@ export type If = {
         then: Expression;
         else: Expression;
     }
-
+    span: Span;
 }
 
 export type Expression
@@ -77,7 +85,7 @@ export type Ast = { [name: string]: Expression };
 function parseConditional(tokens: Token[]): [Expression, Token[]] {
     const [condition, rest] = parseExpression(tokens, precedenceOf.lowestPrecedence);
     const [thenBranch, rest2] = parseBlock(rest);
-    tokens = consume(rest2, { kind: "symbol", value: "else" });
+    tokens = consume(rest2, "symbol", "else");
     const [elseBranch, rest3] = parseBlock(tokens);
     return [{
         kind: "if",
@@ -85,9 +93,9 @@ function parseConditional(tokens: Token[]): [Expression, Token[]] {
             condition,
             then: thenBranch,
             else: elseBranch,
-        }
+        },
+        span: [[0, 0], [0, 0]]
     }, rest3];
-
 }
 
 function parseFunctionParameters(tokens: Token[], precedence: Precedence): [Parameter[], Token[]] {
@@ -96,10 +104,10 @@ function parseFunctionParameters(tokens: Token[], precedence: Precedence): [Para
         const token = tokens[0];
         switch (token.kind) {
             case "symbol":
-                tokens = consume(tokens.slice(1), { kind: "delimiter", value: ":" });
+                tokens = consume(tokens.slice(1), "delimiter", ":");
                 const [type, rest] = parseExpression(tokens, precedence);
                 tokens = rest;
-                parameters.push({ name: token.value, type });
+                parameters.push({ name: token.value, type, span: token.span });
                 break;
             case "delimiter":
                 switch (token.value) {
@@ -108,20 +116,20 @@ function parseFunctionParameters(tokens: Token[], precedence: Precedence): [Para
                     default: throw new CompilerError({
                         kind: "parsing function parameter invalid token error",
                         token,
-                        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+                        span: [[0, 0], [0, 0]]
                     });
                 }
                 break
             default: throw new CompilerError({
                 kind: "parsing function parameter invalid token error",
                 token,
-                span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+                span: [[0, 0], [0, 0]]
             });
         }
     }
     throw new CompilerError({
         kind: 'parsing function parameter expecting closing delimiter error',
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
 }
 
@@ -139,12 +147,12 @@ function trimNewlines(tokens: Token[]): Token[] {
 
 function parseBlock(tokens: Token[]): [Expression, Token[]] {
     const expressions: Expression[] = []
-    tokens = consume(tokens, { kind: "delimiter", value: "{" });
+    tokens = consume(tokens, "delimiter", "{");
     while (true) {
         tokens = trimNewlines(tokens);
         if (tokens.length === 0) throw new CompilerError({
             kind: "parsing block expecting closing delimiter error",
-            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+            span: [[0, 0], [0, 0]]
         })
         const token = tokens[0];
         switch (token.kind) {
@@ -152,10 +160,11 @@ function parseBlock(tokens: Token[]): [Expression, Token[]] {
                 switch (token.value) {
                     case "}":
                         tokens = tokens.slice(1);
+                        const span: Span = [[0, 0], [0, 0]]
                         switch (expressions.length) {
-                            case 0: return [{ kind: "block", value: [] }, tokens]
+                            case 0: return [{ kind: "block", value: [], span }, tokens]
                             case 1: return [expressions[0], tokens];
-                            default: return [{ kind: "block", value: expressions }, tokens]
+                            default: return [{ kind: "block", value: expressions, span }, tokens]
                         }
                     default:
                         const [expression, newTokens] = parseExpression(tokens, precedenceOf.lowestPrecedence);
@@ -171,21 +180,18 @@ function parseBlock(tokens: Token[]): [Expression, Token[]] {
                 break;
         }
     }
-    throw new CompilerError({
-        kind: "parsing block expecting closing delimiter error",
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
-    });
 }
 
 function parseFunction(tokens: Token[], precedence: Precedence): [Expression, Token[]] {
     tokens = tokens.slice(1);
     const [parameters, rest] = parseFunctionParameters(tokens, precedence);
-    tokens = consume(rest, { kind: "delimiter", value: "->" });
+    tokens = consume(rest, "delimiter", "->");
     const [returnType, rest2] = parseExpression(tokens, precedence);
     const [body, rest3] = parseBlock(rest2);
     return [{
         kind: "function",
-        value: { parameters, returnType, body }
+        value: { parameters, returnType, body },
+        span: [[0, 0], [0, 0]]
     }, rest3];
 }
 
@@ -200,7 +206,7 @@ function parseSymbol(tokens: Token[], symbol: Symbol): [Expression, Token[]] {
 function parsePrefix(tokens: Token[]): [Expression, Token[]] {
     if (tokens.length === 0) throw new CompilerError({
         kind: "parsing prefix expecting expression error",
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
     const token = tokens[0];
     switch (token.kind) {
@@ -211,7 +217,7 @@ function parsePrefix(tokens: Token[]): [Expression, Token[]] {
         default: throw new CompilerError({
             kind: "parsing prefix invalid token error",
             token,
-            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+            span: [[0, 0], [0, 0]]
         });
     }
 }
@@ -225,10 +231,15 @@ function parseCall(tokens: Token[], prefix: Expression, precedence: Precedence):
         const token = tokens[0]
         if (token.kind === 'delimiter') {
             switch (token.value) {
-                case ')': return [{
-                    kind: "call",
-                    value: { function: prefix, arguments: args }
-                }, tokens.slice(1)]
+                case ')':
+                    const start: Position = prefix.span[0]
+                    const end: Position = token.span[1]
+                    const span: Span = [start, end]
+                    return [{
+                        kind: "call",
+                        value: { function: prefix, arguments: args },
+                        span: span
+                    }, tokens.slice(1)]
                 case ',': tokens = tokens.slice(1); break;
                 default: break;
             }
@@ -239,7 +250,7 @@ function parseCall(tokens: Token[], prefix: Expression, precedence: Precedence):
     }
     throw new CompilerError({
         kind: "parsing call expecting closing delimiter error",
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
 }
 
@@ -247,13 +258,14 @@ function parseDefineWithTypeAnnotation(tokens: Token[], name: Expression, preced
     if (name.kind !== "symbol") throw new CompilerError({
         kind: "parse define expecting symbol error",
         name,
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
     tokens = tokens.slice(1);
     const [type, rest] = parseExpression(tokens, precedenceOf.variableDefinition + 1);
-    tokens = consume(rest, { kind: "operator", value: "=" });
+    tokens = consume(rest, "operator", "=");
     const [value, rest2] = parseExpression(tokens, precedence);
-    return [{ kind: "define", value: { name: name.value, type, value } }, rest2];
+    const span: Span = [[0, 0], [0, 0]];
+    return [{ kind: "define", value: { name: name.value, type, value }, span }, rest2];
 }
 
 function infixParserForDelimiter(delimiter: Delimiter): [InfixParser, Precedence] | null {
@@ -264,24 +276,18 @@ function infixParserForDelimiter(delimiter: Delimiter): [InfixParser, Precedence
     }
 }
 
-function consume(tokens: Token[], expected: Token): Token[] {
+function consume(tokens: Token[], kind: 'symbol' | 'delimiter' | 'operator', value: string): Token[] {
     if (tokens.length === 0) throw new CompilerError({
         kind: "consume expecting expression error",
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
     const token = tokens[0];
-    function valueOf(token: Token): string | null {
-        switch (token.kind) {
-            case "newline": return null;
-            default: return token.value;
-        }
-    }
-    if (token.kind !== expected.kind || valueOf(token) !== valueOf(expected)) {
+    if (token.kind !== kind || token.value !== value) {
         throw new CompilerError({
             kind: "consume invalid token error",
-            expected,
+            expected: { kind, value },
             actual: token,
-            span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+            span: [[0, 0], [0, 0]]
         })
     }
     return tokens.slice(1);
@@ -291,7 +297,8 @@ function parseBinaryOp(op: BinaryOpKind): [InfixParser, Precedence] {
     function parseInfix(tokens: Token[], left: Expression, precedence: Precedence): [Expression, Token[]] {
         tokens = tokens.slice(1);
         const [right, rest] = parseExpression(tokens, precedence);
-        return [{ kind: "binaryOp", value: { op, left, right } }, rest];
+        const span: Span = [[0, 0], [0, 0]];
+        return [{ kind: "binaryOp", value: { op, left, right }, span }, rest];
     }
     return [parseInfix, precedenceOf.binaryOp[op]];
 }
@@ -300,11 +307,12 @@ function parseDefine(tokens: Token[], name: Expression, precedence: Precedence):
     if (name.kind !== "symbol") throw new CompilerError({
         kind: "parse define expecting symbol error",
         name,
-        span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+        span: [[0, 0], [0, 0]]
     });
     tokens = tokens.slice(1);
     const [value, rest] = parseExpression(tokens, precedence);
-    return [{ kind: "define", value: { name: name.value, value } }, rest];
+    const span: Span = [[0, 0], [0, 0]];
+    return [{ kind: "define", value: { name: name.value, value }, span }, rest];
 }
 
 function infixParserForOperator(operator: Operator): [InfixParser, Precedence] | null {
@@ -353,7 +361,7 @@ export function parse(input: Token[]): Ast {
                 throw new CompilerError({
                     kind: "parse invalid expression error",
                     expression,
-                    span: { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } }
+                    span: [[0, 0], [0, 0]]
                 });
         }
     }

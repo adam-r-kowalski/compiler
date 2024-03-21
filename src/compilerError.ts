@@ -54,7 +54,7 @@ export type ConsumeExpectingExpressionError = {
 
 export type ConsumeInvalidTokenError = {
     kind: "consume invalid token error";
-    expected: Token;
+    expected: { kind: string, value: string };
     actual: Token;
     span: Span;
 }

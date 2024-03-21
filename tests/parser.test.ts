@@ -13,21 +13,21 @@ test("parse symbol", () => {
 test("parse int", () => {
     const tokens = tokenize("42");
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    const expected = [{ kind: "int", value: "42", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 2 } } }, []];
+    const expected = [{ kind: "int", value: "42", span: [[0, 0], [0, 2]] }, []];
     expect(actual).toEqual(expected);
 });
 
 test("parse float", () => {
     const tokens = tokenize("3.14");
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    const expected = [{ kind: "float", value: "3.14" }, []];
+    const expected = [{ kind: "float", value: "3.14", span: [[0, 0], [0, 4]] }, []];
     expect(actual).toEqual(expected);
 });
 
 test("parse string", () => {
     const tokens = tokenize('"Hello World"');
     const actual = parseExpression(tokens, precedenceOf.lowestPrecedence);
-    const expected = [{ kind: "string", value: "Hello World" }, []];
+    const expected = [{ kind: "string", value: "Hello World", span: [[0, 0], [0, 13]] }, []];
     expect(actual).toEqual(expected);
 });
 
@@ -37,9 +37,10 @@ test("parse function call with no arguments", () => {
     const expected = [{
         kind: "call",
         value: {
-            function: { kind: "symbol", value: "f" },
+            function: { kind: "symbol", value: "f", span: [[0, 0], [0, 1]] },
             arguments: []
-        }
+        },
+        span: [[0, 0], [0, 3]]
     }, []];
     expect(actual).toEqual(expected);
 });
