@@ -127,9 +127,8 @@ function tokenizeNumber(cursor: Cursor): [Int | Float | Delimiter, Cursor] {
 
 function advance(cursor: Cursor, by: number): Cursor {
   const input = cursor.input.slice(by);
-  const start: Position = [cursor.span[0][0], cursor.span[0][1]];
-  const end = cursor.span[1];
-  const span: Span = [start, end];
+  const start: Position = [cursor.span[0][0], cursor.span[0][1] + by];
+  const span: Span = [start, start];
   return { span, input };
 }
 

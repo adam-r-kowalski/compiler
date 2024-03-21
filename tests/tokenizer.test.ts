@@ -18,10 +18,10 @@ test("tokenize symbol", () => {
 test("tokenize int", () => {
   const actual = tokenize("42 100 -10");
   const expected = [
-    { kind: "int", value: "42", span: { start: { line: 0, column: 0 }, end: { line: 0, column: 2 } } },
-    { kind: "int", value: "100", span: { start: { line: 0, column: 3 }, end: { line: 0, column: 6 } } },
-    { kind: "operator", value: "-", span: { start: { line: 0, column: 7 }, end: { line: 0, column: 8 } } },
-    { kind: "int", value: "10", span: { start: { line: 0, column: 8 }, end: { line: 0, column: 10 } } }
+    { kind: "int", value: "42", span: [[0, 0], [0, 2]] },
+    { kind: "int", value: "100", span: [[0, 3], [0, 6]] },
+    { kind: "operator", value: "-", span: [[0, 7], [0, 8]] },
+    { kind: "int", value: "10", span: [[0, 8], [0, 10]] }
   ];
   expect(actual).toEqual(expected);
 });
