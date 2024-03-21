@@ -1,37 +1,49 @@
 import { CompilerError } from "./compilerError";
+import type { Span } from "./span";
 
 export type Symbol = {
   kind: "symbol";
   value: string;
+  span: Span;
 }
 
 export type Int = {
   kind: "int";
   value: string;
+  span: Span;
 }
 
 export type Float = {
   kind: "float";
   value: string;
+  span: Span;
 }
 
 export type String = {
   kind: "string";
   value: string;
+  span: Span;
 }
+
+export type DelimiterKind = "(" | ")" | "[" | "]" | "{" | "}" | "," | "." | ":" | "->";
 
 export type Delimiter = {
   kind: "delimiter";
-  value: "(" | ")" | "[" | "]" | "{" | "}" | "," | "." | ":" | "->";
+  value: DelimiterKind;
+  span: Span;
 }
+
+export type OperatorKind = "=" | "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==";
 
 export type Operator = {
   kind: "operator";
-  value: "=" | "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "==";
+  value: OperatorKind;
+  span: Span;
 }
 
 export type Newline = {
   kind: "newline";
+  span: Span;
 }
 
 export type Token
@@ -43,6 +55,11 @@ export type Token
   | Operator
   | Newline;
 
+type Cursor = {
+  span: Span;
+  input: string;
+}
+
 function isAlphabetic(char: string): boolean {
   const code = char.charCodeAt(0);
   return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
@@ -53,80 +70,136 @@ function isNumeric(char: string): boolean {
   return code >= 48 && code <= 57;
 }
 
-function takeWhile(input: string, predicate: (char: string) => boolean): [string, string] {
+function takeWhile(cursor: Cursor, predicate: (char: string) => boolean): [string, Span, Cursor] {
   let i = 0;
-  while (i < input.length && predicate(input[i])) {
+  while (i < cursor.input.length && predicate(cursor.input[i])) {
     i++;
   }
-  return [input.slice(0, i), input.slice(i)];
+  const taken = cursor.input.slice(0, i);
+  const start = cursor.span.start;
+  const end = { line: start.line, column: start.column + i };
+  const span = { start, end };
+  const next_span = { start: end, end: end };
+  const next_cursor = { span: next_span, input: cursor.input.slice(i) }
+  return [taken, span, next_cursor];
 }
 
 function takeWhileStatefull<State>(
-  input: string,
+  cursor: Cursor,
   initial: State,
   predicate: (char: string, state: State) => [boolean, State]
-): [string, string, State] {
+): [string, Span, Cursor, State] {
   let i = 0;
   let state = initial;
-  while (i < input.length) {
-    const [condition, new_state] = predicate(input[i], state);
+  while (i < cursor.input.length) {
+    const [condition, new_state] = predicate(cursor.input[i], state);
     if (!condition) break;
     state = new_state;
     i++;
   }
-  return [input.slice(0, i), input.slice(i), state];
+  const taken = cursor.input.slice(0, i);
+  const start = cursor.span.start;
+  const end = { line: start.line, column: start.column + i };
+  const span = { start, end };
+  const next_span = { start: end, end: end };
+  const next_cursor = { span: next_span, input: cursor.input.slice(i) }
+  return [taken, span, next_cursor, state];
 }
 
-function tokenizeSymbol(input: string): [Symbol, string] {
-  const [value, rest] = takeWhile(input, c => isAlphabetic(c) || isNumeric(c) || c === '_');
-  return [{ kind: "symbol", value }, rest];
+function tokenizeSymbol(cursor: Cursor): [Symbol, Cursor] {
+  const [value, span, cursor2] = takeWhile(cursor, c => isAlphabetic(c) || isNumeric(c) || c === '_');
+  return [{ kind: "symbol", value, span }, cursor2];
 }
 
-function tokenizeNumber(input: string): [Int | Float | Delimiter, string] {
-  const [number, rest, isFloat] = takeWhileStatefull(input, false, (c, isFloat) => {
+function tokenizeNumber(cursor: Cursor): [Int | Float | Delimiter, Cursor] {
+  const [value, span, cursor2, isFloat] = takeWhileStatefull(cursor, false, (c, isFloat) => {
     if (c === '.' && !isFloat) {
       return [true, true];
     }
     return [isNumeric(c), isFloat]
   });
   if (isFloat) {
-    if (number === '.') return [{ kind: "delimiter", value: '.' }, rest];
-    return [{ kind: "float", value: number }, rest];
+    if (value === '.') return [{ kind: "delimiter", value: '.', span }, cursor2];
+    return [{ kind: "float", value, span }, cursor2];
   }
-  return [{ kind: "int", value: number }, rest];
+  return [{ kind: "int", value, span }, cursor2];
 }
 
-function tokenizeString(input: string): [String, string] {
-  const [value, rest] = takeWhile(input, c => c !== '"');
-  return [{ kind: "string", value }, rest.slice(1)];
+function advance(cursor: Cursor, by: number): Cursor {
+  const input = cursor.input.slice(by);
+  const start = { line: cursor.span.start.line, column: cursor.span.start.column + by };
+  const end = cursor.span.end;
+  const span = { start, end };
+  return { span, input };
 }
 
-function either(input: string, oneLetter: Delimiter | Operator, twoLetter: Delimiter | Operator): [Token, string] {
-  if (input.length > 1 && input[1] === twoLetter.value[1]) return [twoLetter, input.slice(2)];
-  return [oneLetter, input.slice(1)];
+function tokenizeString(cursor: Cursor): [String, Cursor] {
+  let [value, span, cursor2] = takeWhile(cursor, c => c !== '"');
+  cursor2 = advance(cursor2, 1);
+  span.start.column -= 1;
+  span.end.column += 1;
+  return [{ kind: "string", value, span }, cursor2];
 }
 
-function nextToken(input: string): [Token, string] {
-  const c = input[0];
-  if (isAlphabetic(c) || c === '_') return tokenizeSymbol(input);
-  if (isNumeric(c) || c === '.') return tokenizeNumber(input);
-  if (c === '"') return tokenizeString(input.slice(1))
-  if (c === '-') return either(input, { kind: "operator", value: '-' }, { kind: "delimiter", value: '->' });
-  if (c === '<') return either(input, { kind: "operator", value: '<' }, { kind: "operator", value: '<=' });
-  if (c === '>') return either(input, { kind: "operator", value: '>' }, { kind: "operator", value: '>=' });
-  if (c === '=') return either(input, { kind: "operator", value: '=' }, { kind: "operator", value: '==' });
-  if (c === '(') return [{ kind: "delimiter", value: '(', }, input.slice(1)];
-  if (c === ')') return [{ kind: "delimiter", value: ')', }, input.slice(1)];
-  if (c === '[') return [{ kind: "delimiter", value: '[', }, input.slice(1)];
-  if (c === ']') return [{ kind: "delimiter", value: ']', }, input.slice(1)];
-  if (c === '{') return [{ kind: "delimiter", value: '{', }, input.slice(1)];
-  if (c === '}') return [{ kind: "delimiter", value: '}', }, input.slice(1)];
-  if (c === ',') return [{ kind: "delimiter", value: ',', }, input.slice(1)];
-  if (c === ':') return [{ kind: "delimiter", value: ':', }, input.slice(1)];
-  if (c === '+') return [{ kind: "operator", value: '+', }, input.slice(1)];
-  if (c === '/') return [{ kind: "operator", value: '/', }, input.slice(1)];
-  if (c === '*') return [{ kind: "operator", value: '*', }, input.slice(1)];
-  if (c === '\n') return [{ kind: "newline" }, input.slice(1)];
+function either(
+  cursor: Cursor,
+  oneLetter: Delimiter | Operator,
+  twoLetter: Delimiter | Operator
+): [Token, Cursor] {
+  if (cursor.input.length > 1 && cursor.input[1] === twoLetter.value[1]) {
+    return [twoLetter, advance(cursor, 2)];
+  }
+  return [oneLetter, advance(cursor, 1)];
+}
+
+function operatorFor(cursor: Cursor, value: OperatorKind): Operator {
+  const start = cursor.span.start;
+  const end = { line: start.line, column: start.column + value.length };
+  const span = { start, end };
+  return { kind: "operator", value, span };
+}
+
+function delimiterFor(cursor: Cursor, value: DelimiterKind): Delimiter {
+  const start = cursor.span.start;
+  const end = { line: start.line, column: start.column + value.length };
+  const span = { start, end };
+  return { kind: "delimiter", value, span };
+}
+
+function newline(cursor: Cursor): [Newline, Cursor] {
+  const span = {
+    start: cursor.span.start,
+    end: { line: cursor.span.start.line + 1, column: 0 }
+  }
+  const input = cursor.input.slice(1);
+  const next_span = { start: span.end, end: span.end };
+  return [{ kind: "newline", span }, { span: next_span, input }];
+}
+
+function nextToken(cursor: Cursor): [Token, Cursor] {
+  const c = cursor.input[0];
+  if (isAlphabetic(c) || c === '_') return tokenizeSymbol(cursor);
+  if (isNumeric(c) || c === '.') return tokenizeNumber(cursor);
+  if (c === '"') return tokenizeString(advance(cursor, 1))
+  const operator = operatorFor.bind(null, cursor);
+  const delimiter = delimiterFor.bind(null, cursor);
+  const next_cursor = advance(cursor, 1);
+  if (c === '-') return either(cursor, operator('-'), delimiter('->'));
+  if (c === '<') return either(cursor, operator('<'), operator('<='));
+  if (c === '>') return either(cursor, operator('>'), operator('>='));
+  if (c === '=') return either(cursor, operator('='), operator('=='));
+  if (c === '(') return [delimiter('('), next_cursor];
+  if (c === ')') return [delimiter(')'), next_cursor];
+  if (c === '[') return [delimiter('['), next_cursor];
+  if (c === ']') return [delimiter(']'), next_cursor];
+  if (c === '{') return [delimiter('{'), next_cursor];
+  if (c === '}') return [delimiter('}'), next_cursor];
+  if (c === ',') return [delimiter(','), next_cursor];
+  if (c === ':') return [delimiter(':'), next_cursor];
+  if (c === '+') return [operator('+'), next_cursor];
+  if (c === '/') return [operator('/'), next_cursor];
+  if (c === '*') return [operator('*'), next_cursor];
+  if (c === '\n') return newline(cursor);
   throw new CompilerError({
     kind: "tokenization invalid character error",
     character: c,
@@ -139,11 +212,14 @@ function nextToken(input: string): [Token, string] {
 
 export function tokenize(input: string): Token[] {
   let tokens = [];
+  const span = { start: { line: 0, column: 0 }, end: { line: 0, column: 0 } };
+  let cursor = { span, input };
   while (true) {
-    const [_, input2] = takeWhile(input, c => c === ' ');
-    if (input2.length === 0) return tokens;
-    const [token, input3] = nextToken(input2);
-    input = input3;
+    const [_, _2, cursor2] = takeWhile(cursor, c => c === ' ');
+    cursor = cursor2;
+    if (cursor.input.length === 0) return tokens;
+    const [token, cursor3] = nextToken(cursor);
+    cursor = cursor3;
     tokens.push(token);
   }
 }
